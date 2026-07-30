@@ -1,0 +1,88 @@
+.bc-radio-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.bc-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: var(--bc-fontSize-medium-control);
+  color: var(--bc-primaryTextColor);
+}
+
+.bc-radio__native {
+  width: 0;
+  height: 0;
+  opacity: 0;
+  position: absolute;
+}
+
+.bc-radio__circle {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--bc-borderColor);
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.2s var(--bc-easeInOutCirc);
+}
+.bc-radio:hover .bc-radio__circle { border-color: var(--bc-hoverBorderColor); }
+.bc-radio__circle--checked { border-color: var(--bc-themeColor); }
+.bc-radio__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bc-themeColor);
+}
+
+.bc-radio--disabled {
+  cursor: not-allowed;
+  color: var(--bc-disabledTextColor);
+}
+.bc-radio--disabled .bc-radio__circle {
+  border-color: var(--bc-borderColor);
+  background: var(--bc-disabledBgColor);
+}
+
+/* button / buttonGhost 胶囊组 */
+.bc-radio-group--button,
+.bc-radio-group--buttonGhost {
+  gap: 10px;
+}
+
+.bc-radio-btn {
+  height: var(--bc-height-medium);
+  padding: 0 12px;
+  border-radius: var(--bc-borderRadius);
+  font-size: var(--bc-fontSize-medium-control);
+  cursor: pointer;
+  transition: all 0.2s var(--bc-easeInOutCirc);
+}
+
+.bc-radio-group--button .bc-radio-btn {
+  background: #fff;
+  border: 1px solid var(--bc-borderColor);
+  color: var(--bc-primaryTextColor);
+}
+.bc-radio-group--button .bc-radio-btn--active {
+  background: var(--bc-themeColor);
+  border-color: var(--bc-themeColor);
+  color: #fff;
+}
+
+.bc-radio-group--buttonGhost .bc-radio-btn {
+  background: transparent;
+  border: 1px solid var(--bc-borderColor);
+  color: var(--bc-primaryTextColor);
+}
+.bc-radio-group--buttonGhost .bc-radio-btn--active {
+  border-color: var(--bc-themeColor);
+  color: var(--bc-themeColor);
+}

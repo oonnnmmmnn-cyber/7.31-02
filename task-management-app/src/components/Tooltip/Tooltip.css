@@ -1,0 +1,50 @@
+.bc-tooltip-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.bc-tooltip {
+  position: absolute;
+  z-index: var(--bc-z-tooltip);
+  background: #fff;
+  color: var(--bc-primaryTextColor);
+  padding: 5px 9px;
+  font-size: 12px;
+  border-radius: var(--bc-borderRadius);
+  box-shadow: var(--bc-boxShadow-tooltip);
+  white-space: nowrap;
+  animation: bc-fade-in 0.15s ease;
+}
+
+.bc-tooltip--top {
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+.bc-tooltip--bottom {
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+.bc-tooltip--left {
+  right: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+.bc-tooltip--right {
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.bc-tooltip__arrow {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  transform: rotate(45deg);
+}
+.bc-tooltip--top .bc-tooltip__arrow { bottom: -4px; left: 50%; margin-left: -4px; }
+.bc-tooltip--bottom .bc-tooltip__arrow { top: -4px; left: 50%; margin-left: -4px; }
+.bc-tooltip--left .bc-tooltip__arrow { right: -4px; top: 50%; margin-top: -4px; }
+.bc-tooltip--right .bc-tooltip__arrow { left: -4px; top: 50%; margin-top: -4px; }

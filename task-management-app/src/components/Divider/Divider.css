@@ -1,0 +1,29 @@
+.bc-divider--horizontal {
+  display: block;
+  width: 100%;
+  min-width: 100%;
+  height: 1px;
+  background: var(--bc-divideColor);
+  border: none;
+}
+
+.bc-divider--vertical {
+  display: inline-block;
+  width: 1px;
+  height: 0.9em;
+  background: var(--bc-divideColor);
+  vertical-align: middle;
+}
+
+.bc-divider-text-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.bc-divider-text {
+  font-size: 12px;
+  color: var(--bc-thirdlyTextColor);
+  white-space: nowrap;
+}

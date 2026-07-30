@@ -1,0 +1,143 @@
+/**
+ * Beast Core / OMS 设计规范 —— Design Token 定义
+ * 数据来源：《Beast-Core-设计规范-精简版-02.md》附录 A/B/C
+ * 本文件为唯一 Token 权威源，所有组件样式均引用此处变量，禁止在组件内硬编码色值。
+ */
+:root {
+  /* —— 主题色板 §2.1 —— */
+  --bc-themeColor: #0071f3;
+  --bc-themeColor1: #e6f6ff;
+  --bc-themeColor2: #a3daff;
+  --bc-themeColor3: #7ac6ff;
+  --bc-themeColor4: #52aeff;
+  --bc-themeColor5: #2994ff;
+  --bc-themeColor6: #0071f3;
+  --bc-themeColor7: #0058cc;
+  --bc-themeColor8: #0042a6;
+  --bc-themeColor9: #002f80;
+  --bc-themeColor10: #001e59;
+
+  /* —— 语义色 §2.2 —— */
+  --bc-dangerColor: #f71010;
+  --bc-dangerColor-hover: #d10209;
+  --bc-dangerColor-active: #ab000b;
+  --bc-successColor: #00bb12;
+  --bc-warnColor: #fb7701;
+  --bc-linkColor: #0071f3;
+  --bc-linkColor-hover: #0058cc;
+  --bc-linkColor-active: #0042a6;
+  --bc-linkColor-disabled: #c2c2c2;
+  --bc-hoverBorderColor: #0058cc;
+
+  /* —— 背景与边框 §2.4 —— */
+  --bc-bgColor: #fff;
+  --bc-disabledBgColor: #f5f5f5;
+  --bc-activeDisabledBgColor: #c2c2c2;
+  --bc-borderColor: #dbdbdb;
+  --bc-divideColor: #ebebeb;
+  --bc-trackColor: #f0f0f0;
+  --bc-boxShadowColor: #eef7ff;
+  --bc-canvasBgColor: #f0f2f5; /* §12.1 主画布背景 */
+
+  /* —— 文字色（黑色透明度梯度）§2.3 —— */
+  --bc-primaryTextColor: rgba(0, 0, 0, 0.8);
+  --bc-secondaryTextColor: rgba(0, 0, 0, 0.6);
+  --bc-thirdlyTextColor: rgba(0, 0, 0, 0.4);
+  --bc-hintTextColor: rgba(0, 0, 0, 0.32);
+  --bc-disabledTextColor: rgba(0, 0, 0, 0.24);
+  --bc-placeholderColor: rgba(0, 0, 0, 0.32);
+
+  /* —— 图标色 §2.6 —— */
+  --bc-icon-color: rgba(0, 0, 0, 0.4);
+  --bc-icon-hoverColor: rgba(0, 0, 0, 0.8);
+  --bc-arrowIconColor: rgba(0, 0, 0, 0.4);
+  --bc-arrowColor: rgba(0, 0, 0, 0.6);
+
+  /* —— 状态提示三件套 §2.9 —— */
+  --bc-status-success-color: #00bb12;
+  --bc-status-success-bg: #e3fae1;
+  --bc-status-success-border: #9bed98;
+  --bc-status-warn-color: #fb7701;
+  --bc-status-warn-bg: #fff6e6;
+  --bc-status-warn-border: #ffdaa3;
+  --bc-status-error-color: #f71010;
+  --bc-status-error-bg: #ffeae6;
+  --bc-status-error-border: #ffbdb3;
+  --bc-status-info-color: #0071f3;
+  --bc-status-info-bg: #e6f6ff;
+  --bc-status-info-border: #a3daff;
+
+  /* —— Tag 专属配色 §5.7 —— */
+  --bc-tag-info-color: #0071f3;
+  --bc-tag-info-bg: #e6f6ff;
+  --bc-tag-info-border: #52aeff;
+  --bc-tag-warn-color: #ff7300;
+  --bc-tag-warn-bg: #fff5e6;
+  --bc-tag-warn-border: #ffc37a;
+  --bc-tag-danger-color: #f71010;
+  --bc-tag-danger-bg: #fff2f0;
+  --bc-tag-danger-border: #ffaca6;
+  --bc-tag-success-color: #00bb12;
+  --bc-tag-success-bg: #e3fae1;
+  --bc-tag-success-border: #9bed98;
+  --bc-tag-fail-color: rgba(0, 0, 0, 0.4);
+  --bc-tag-fail-bg: #ebebeb;
+  --bc-tag-fail-border: rgba(0, 0, 0, 0.12);
+  --bc-tag-gray-color: rgba(0, 0, 0, 0.6);
+  --bc-tag-gray-bg: rgba(0, 0, 0, 0.04);
+
+  /* —— 尺寸三档 §4.1 —— */
+  --bc-height-small: 24px;
+  --bc-height-medium: 28px;
+  --bc-height-large: 40px;
+  --bc-fontSize-small: 12px;
+  --bc-fontSize-medium: 12px;
+  --bc-fontSize-medium-control: 14px;
+  --bc-fontSize-large: 16px;
+
+  /* —— 圆角 §4.2 —— */
+  --bc-borderRadius: 6px;
+  --bc-borderRadius-toast: 3px;
+  --bc-borderRadius-noticeBar: 3px;
+  --bc-borderRadius-card: 0px;
+  --bc-borderRadius-sku: 12px;
+  --bc-borderRadius-badge: 6px;
+  --bc-borderRadius-badge-large: 8px;
+
+  /* —— 间距栅格 §4.3 —— */
+  --bc-space-4: 4px;
+  --bc-space-8: 8px;
+  --bc-space-12: 12px;
+  --bc-space-16: 16px;
+  --bc-space-20: 20px;
+  --bc-space-24: 24px;
+
+  /* —— 阴影 §4.4 —— */
+  --bc-boxShadow-popup: 0 2px 8px 0 rgba(0, 0, 0, 0.15);
+  --bc-boxShadow-tooltip: 0 2px 8px 0 rgba(0, 0, 0, 0.4);
+  --bc-boxShadow-toast-success: 0px 2px 8px 0px rgba(0, 33, 8, 0.12);
+  --bc-boxShadow-toast-warn: 0px 2px 8px 0px rgba(97, 66, 0, 0.12);
+  --bc-boxShadow-toast-error: 0px 2px 8px 0px rgba(94, 0, 13, 0.12);
+
+  /* —— 动效 §8 —— */
+  --bc-easeInOutCirc: cubic-bezier(0.78, 0.14, 0.15, 0.86);
+
+  /* —— z-index §6 —— */
+  --bc-z-backTop: 10;
+  --bc-z-tableFixed: 100;
+  --bc-z-selectDropdown: 101;
+  --bc-z-spin: 999;
+  --bc-z-preview: 999;
+  --bc-z-modal: 1000;
+  --bc-z-modalMask: 1000;
+  --bc-z-toast: 1010;
+  --bc-z-notification: 1010;
+  --bc-z-popover: 1030;
+  --bc-z-portal: 1030;
+  --bc-z-dropdown: 1050;
+  --bc-z-tooltip: 1060;
+
+  /* —— 字体 §9.1 —— */
+  --bc-font-family: 'PingFang SC', 'Heiti SC', 'Microsoft Yahei', -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
