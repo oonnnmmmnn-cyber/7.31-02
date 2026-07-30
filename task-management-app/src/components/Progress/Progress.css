@@ -1,0 +1,41 @@
+.bc-progress-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.bc-progress-line__track {
+  flex: 1 1 auto;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bc-trackColor);
+  overflow: hidden;
+}
+
+.bc-progress-line__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s var(--bc-easeInOutCirc);
+}
+
+.bc-progress-line__text {
+  font-size: 12px;
+  color: var(--bc-secondaryTextColor);
+  min-width: 36px;
+}
+
+.bc-progress-circle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bc-progress-circle__text {
+  position: absolute;
+  font-size: 14px;
+  color: var(--bc-primaryTextColor);
+  font-weight: 600;
+}

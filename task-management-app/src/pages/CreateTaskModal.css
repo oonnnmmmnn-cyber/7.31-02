@@ -1,0 +1,27 @@
+.create-task__templates {
+  margin-bottom: 20px;
+}
+
+.create-task__templates-label {
+  font-size: 12px;
+  color: var(--bc-secondaryTextColor);
+  margin-bottom: 8px;
+}
+
+.create-task__template-card {
+  width: 168px;
+  cursor: pointer;
+}
+
+.create-task__template-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--bc-primaryTextColor);
+  margin-bottom: 4px;
+}
+
+.create-task__template-desc {
+  font-size: 12px;
+  color: var(--bc-secondaryTextColor);
+  line-height: 1.5;
+}

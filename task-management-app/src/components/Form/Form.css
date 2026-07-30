@@ -1,0 +1,59 @@
+.bc-form {
+  width: 100%;
+}
+
+.bc-form-item {
+  margin-bottom: var(--bc-space-16);
+}
+
+.bc-form-item--inline {
+  display: flex;
+  align-items: flex-start;
+}
+
+.bc-form-item__label {
+  flex: 0 0 104px;
+  width: 104px;
+  text-align: right;
+  padding-right: var(--bc-space-16);
+  line-height: 1.5;
+  height: var(--bc-height-medium);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-size: var(--bc-fontSize-medium-control);
+  color: var(--bc-primaryTextColor);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.bc-form-item__required {
+  color: var(--bc-dangerColor);
+  margin-right: 4px;
+}
+
+.bc-form-item__content {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.5;
+}
+
+.bc-form-item__error-text {
+  color: var(--bc-dangerColor);
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.bc-form-item--error .bc-form-item__content :is(.bc-input-wrap, .bc-select__control, .bc-textarea) {
+  border-color: var(--bc-dangerColor) !important;
+}
+
+@keyframes bc-error-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+.bc-form-item--error {
+  animation: bc-error-shake 0.4s var(--bc-easeInOutCirc);
+}

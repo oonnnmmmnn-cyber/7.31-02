@@ -1,0 +1,62 @@
+.bc-card {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--bc-borderColor);
+  border-radius: var(--bc-borderRadius-card);
+  overflow: hidden;
+}
+
+.bc-card--selected {
+  border-color: var(--bc-themeColor);
+}
+
+.bc-card__checked-triangle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-top: 24px solid var(--bc-themeColor);
+  border-left: 24px solid transparent;
+  z-index: 1;
+}
+
+.bc-card__checked-icon {
+  position: absolute;
+  top: -23px;
+  right: 1px;
+  color: #fff;
+}
+
+.bc-card__cover {
+  width: 100%;
+  line-height: 0;
+}
+.bc-card__cover img {
+  width: 100%;
+  display: block;
+}
+
+.bc-card__header {
+  height: 40px;
+  padding: 12px 40px 12px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--bc-primaryTextColor);
+  border-bottom: 1px solid var(--bc-divideColor);
+}
+
+.bc-card__body {
+  padding: 12px;
+}
+
+.bc-card__footer {
+  min-height: 40px;
+  padding: 12px;
+  border-top: 1px solid var(--bc-divideColor);
+  display: flex;
+  align-items: center;
+}

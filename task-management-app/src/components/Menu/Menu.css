@@ -1,0 +1,50 @@
+.bc-menu {
+  width: 100%;
+}
+
+.bc-menu--collapsed {
+  width: 64px;
+}
+
+.bc-menu__item {
+  position: relative;
+  height: 40px;
+  line-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 14px;
+  transition: background-color 0.2s var(--bc-easeInOutCirc);
+}
+.bc-menu__item:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.bc-menu__item--active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.bc-menu__indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--bc-themeColor);
+}
+
+.bc-menu__icon {
+  display: inline-flex;
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.bc-menu__label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -1,0 +1,47 @@
+.bc-popover-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.bc-popover {
+  position: absolute;
+  z-index: var(--bc-z-popover);
+  background: #fff;
+  border-radius: var(--bc-borderRadius);
+  box-shadow: var(--bc-boxShadow-popup);
+  padding: 5px 9px;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: bc-fade-in 0.15s ease;
+}
+
+.bc-popover--top { bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); }
+.bc-popover--bottom { top: calc(100% + 8px); left: 50%; transform: translateX(-50%); }
+.bc-popover--left { right: calc(100% + 8px); top: 50%; transform: translateY(-50%); }
+.bc-popover--right { left: calc(100% + 8px); top: 50%; transform: translateY(-50%); }
+
+.bc-popover__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--bc-primaryTextColor);
+}
+
+.bc-popover__content {
+  font-size: 12px;
+  color: var(--bc-secondaryTextColor);
+  white-space: nowrap;
+}
+
+.bc-popover--confirm {
+  min-width: 320px;
+  padding: 12px;
+}
+
+.bc-popover__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}

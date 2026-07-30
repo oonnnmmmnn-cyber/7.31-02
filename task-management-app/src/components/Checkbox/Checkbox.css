@@ -1,0 +1,54 @@
+.bc-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: var(--bc-fontSize-medium-control);
+  color: var(--bc-primaryTextColor);
+}
+
+.bc-checkbox__native {
+  width: 0;
+  height: 0;
+  opacity: 0;
+  position: absolute;
+}
+
+.bc-checkbox__box {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  border: 1px solid var(--bc-borderColor);
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 0.2s var(--bc-easeInOutCirc), border-color 0.2s var(--bc-easeInOutCirc);
+}
+
+.bc-checkbox:hover .bc-checkbox__box {
+  border-color: var(--bc-hoverBorderColor);
+}
+
+.bc-checkbox__box--checked,
+.bc-checkbox__box--indeterminate {
+  background: var(--bc-themeColor);
+  border-color: var(--bc-themeColor);
+}
+
+.bc-checkbox__indeterminate-bar {
+  width: 8px;
+  height: 2px;
+  background: #fff;
+  border-radius: 1px;
+}
+
+.bc-checkbox--disabled {
+  cursor: not-allowed;
+  color: var(--bc-disabledTextColor);
+}
+.bc-checkbox--disabled .bc-checkbox__box {
+  background: var(--bc-disabledBgColor);
+  border-color: var(--bc-borderColor);
+}

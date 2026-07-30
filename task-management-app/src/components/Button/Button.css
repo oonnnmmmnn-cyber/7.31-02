@@ -1,0 +1,143 @@
+.bc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--bc-space-4);
+  border-radius: var(--bc-borderRadius);
+  font-weight: 500;
+  font-family: var(--bc-font-family);
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  transition: background-color 0.2s var(--bc-easeInOutCirc),
+    border-color 0.2s var(--bc-easeInOutCirc), color 0.2s var(--bc-easeInOutCirc);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.bc-btn--small {
+  height: var(--bc-height-small);
+  padding: 0 var(--bc-space-12);
+  font-size: var(--bc-fontSize-small);
+  gap: var(--bc-space-4);
+}
+.bc-btn--medium {
+  height: var(--bc-height-medium);
+  padding: 0 var(--bc-space-12);
+  font-size: var(--bc-fontSize-medium-control);
+  gap: var(--bc-space-4);
+}
+.bc-btn--large {
+  height: var(--bc-height-large);
+  padding: 0 var(--bc-space-16);
+  font-size: var(--bc-fontSize-large);
+  gap: var(--bc-space-8);
+}
+
+.bc-btn--icon-only.bc-btn--small { width: var(--bc-height-small); padding: 0; }
+.bc-btn--icon-only.bc-btn--medium { width: var(--bc-height-medium); padding: 0; }
+.bc-btn--icon-only.bc-btn--large { width: var(--bc-height-large); padding: 0; }
+
+/* primary */
+.bc-btn--primary {
+  background: var(--bc-themeColor);
+  border-color: var(--bc-themeColor);
+  color: #fff;
+}
+.bc-btn--primary:hover:not(:disabled) { background: var(--bc-themeColor7); border-color: var(--bc-themeColor7); }
+.bc-btn--primary:active:not(:disabled) { background: var(--bc-themeColor8); border-color: var(--bc-themeColor8); }
+
+/* secondary */
+.bc-btn--secondary {
+  background: #fff;
+  border-color: var(--bc-themeColor);
+  color: var(--bc-themeColor);
+}
+.bc-btn--secondary:hover:not(:disabled) { border-color: var(--bc-themeColor7); color: var(--bc-themeColor7); }
+.bc-btn--secondary:active:not(:disabled) { border-color: var(--bc-themeColor8); color: var(--bc-themeColor8); }
+
+/* gray */
+.bc-btn--gray {
+  background: #fff;
+  border-color: #adadad;
+  color: var(--bc-primaryTextColor);
+}
+.bc-btn--gray:hover:not(:disabled) { border-color: var(--bc-themeColor7); color: var(--bc-themeColor7); }
+.bc-btn--gray:active:not(:disabled) { border-color: var(--bc-themeColor8); color: var(--bc-themeColor8); }
+
+/* danger */
+.bc-btn--danger {
+  background: var(--bc-dangerColor);
+  border-color: var(--bc-dangerColor);
+  color: #fff;
+}
+.bc-btn--danger:hover:not(:disabled) { background: var(--bc-dangerColor-hover); border-color: var(--bc-dangerColor-hover); }
+.bc-btn--danger:active:not(:disabled) { background: var(--bc-dangerColor-active); border-color: var(--bc-dangerColor-active); }
+
+/* secondaryDanger */
+.bc-btn--secondaryDanger {
+  background: #fff;
+  border-color: var(--bc-dangerColor);
+  color: var(--bc-dangerColor);
+}
+.bc-btn--secondaryDanger:hover:not(:disabled) { border-color: var(--bc-dangerColor-hover); color: var(--bc-dangerColor-hover); }
+
+/* grayDanger */
+.bc-btn--grayDanger {
+  background: #fff;
+  border-color: #adadad;
+  color: var(--bc-primaryTextColor);
+}
+.bc-btn--grayDanger:hover:not(:disabled) { border-color: var(--bc-dangerColor-hover); color: var(--bc-dangerColor-hover); }
+
+/* textPrimary */
+.bc-btn--textPrimary {
+  background: transparent;
+  color: var(--bc-themeColor);
+  padding: 0;
+  height: auto;
+}
+.bc-btn--textPrimary:hover:not(:disabled) { color: var(--bc-themeColor7); }
+.bc-btn--textPrimary:active:not(:disabled) { color: var(--bc-themeColor8); }
+
+/* text (underline) */
+.bc-btn--text {
+  background: transparent;
+  color: var(--bc-primaryTextColor);
+  padding: 0;
+  height: auto;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+  border-radius: 0;
+}
+.bc-btn--text:hover:not(:disabled) { color: var(--bc-themeColor7); border-color: var(--bc-themeColor7); }
+.bc-btn--text:active:not(:disabled) { color: var(--bc-themeColor8); border-color: var(--bc-themeColor8); }
+
+/* textTip */
+.bc-btn--textTip {
+  background: transparent;
+  color: var(--bc-primaryTextColor);
+  padding: 0;
+  height: auto;
+  cursor: default;
+}
+
+.bc-btn:disabled {
+  cursor: not-allowed;
+  background: var(--bc-disabledBgColor) !important;
+  border-color: var(--bc-borderColor) !important;
+  color: var(--bc-hintTextColor) !important;
+}
+.bc-btn--textPrimary:disabled,
+.bc-btn--text:disabled,
+.bc-btn--textTip:disabled {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+.bc-btn__loading-icon {
+  animation: bc-spin 0.8s linear infinite;
+}
+
+.bc-btn--loading {
+  cursor: default;
+}

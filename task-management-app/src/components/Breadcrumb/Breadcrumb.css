@@ -1,0 +1,25 @@
+.bc-breadcrumb {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+}
+
+.bc-breadcrumb__sep {
+  margin: 0 8px;
+  color: var(--bc-divideColor);
+}
+
+.bc-breadcrumb__item {
+  color: var(--bc-secondaryTextColor);
+  cursor: pointer;
+}
+.bc-breadcrumb__item:hover {
+  color: var(--bc-themeColor6);
+}
+.bc-breadcrumb__item:active {
+  color: var(--bc-themeColor7);
+}
+
+.bc-breadcrumb__current {
+  color: var(--bc-primaryTextColor);
+}

@@ -1,0 +1,40 @@
+.bc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+  border-radius: var(--bc-borderRadius);
+  border: 1px solid transparent;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.bc-tag--small { font-size: var(--bc-fontSize-small); }
+.bc-tag--medium { font-size: var(--bc-fontSize-medium); }
+.bc-tag--large { font-size: var(--bc-fontSize-large); }
+
+.bc-tag--info { color: var(--bc-tag-info-color); background: var(--bc-tag-info-bg); border-color: var(--bc-tag-info-border); }
+.bc-tag--warn { color: var(--bc-tag-warn-color); background: var(--bc-tag-warn-bg); border-color: var(--bc-tag-warn-border); }
+.bc-tag--danger { color: var(--bc-tag-danger-color); background: var(--bc-tag-danger-bg); border-color: var(--bc-tag-danger-border); }
+.bc-tag--success { color: var(--bc-tag-success-color); background: var(--bc-tag-success-bg); border-color: var(--bc-tag-success-border); }
+.bc-tag--fail { color: var(--bc-tag-fail-color); background: var(--bc-tag-fail-bg); border-color: var(--bc-tag-fail-border); }
+.bc-tag--gray { color: var(--bc-tag-gray-color); background: var(--bc-tag-gray-bg); border-color: transparent; }
+
+.bc-tag__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.bc-tag__close {
+  border: none;
+  background: transparent;
+  color: currentColor;
+  opacity: 0.6;
+  cursor: pointer;
+  display: inline-flex;
+  padding: 0;
+}
+.bc-tag__close:hover { opacity: 1; }

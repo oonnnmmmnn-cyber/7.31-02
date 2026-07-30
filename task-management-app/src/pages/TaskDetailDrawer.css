@@ -1,0 +1,65 @@
+.task-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.task-detail__status-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--bc-borderRadius);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.task-detail__status-block--warn {
+  background: var(--bc-status-warn-bg);
+  border: 1px solid var(--bc-status-warn-border);
+  color: var(--bc-status-warn-color);
+}
+.task-detail__status-block--success {
+  background: var(--bc-status-success-bg);
+  border: 1px solid var(--bc-status-success-border);
+  color: var(--bc-status-success-color);
+}
+.task-detail__status-block b {
+  color: inherit;
+}
+
+.task-detail__card {
+  width: 100%;
+}
+
+.task-detail__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+}
+.task-detail__label {
+  width: 72px;
+  flex-shrink: 0;
+  color: var(--bc-secondaryTextColor);
+}
+.task-detail__value {
+  color: var(--bc-primaryTextColor);
+}
+
+.task-detail__progress-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.task-detail__progress-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--bc-primaryTextColor);
+  margin-bottom: 4px;
+}
+
+.task-detail__progress-sub {
+  font-size: 12px;
+  color: var(--bc-secondaryTextColor);
+}

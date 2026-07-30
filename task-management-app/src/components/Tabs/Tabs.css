@@ -1,0 +1,101 @@
+.bc-tabs {
+  display: flex;
+  align-items: center;
+}
+
+.bc-tabs__item {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--bc-secondaryTextColor);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s var(--bc-easeInOutCirc);
+}
+.bc-tabs__item:hover {
+  color: var(--bc-themeColor);
+}
+.bc-tabs__item--active {
+  color: var(--bc-themeColor);
+}
+
+/* line 一级线性 tab */
+.bc-tabs--line {
+  gap: 8px;
+  border-bottom: 1px solid #e8e8e8;
+}
+.bc-tabs--line .bc-tabs__item {
+  font-size: 16px;
+  font-weight: 500;
+  padding: 12px 12px;
+  position: relative;
+}
+.bc-tabs--line .bc-tabs__item--active::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--bc-themeColor);
+}
+
+/* status capsule filter bar 快速筛选胶囊 */
+.bc-tabs--capsule {
+  gap: 8px;
+}
+.bc-tabs--capsule .bc-tabs__item {
+  font-size: 12px;
+  padding: 7px 16px;
+  border-radius: var(--bc-borderRadius);
+  border: 1px solid var(--bc-borderColor);
+  color: var(--bc-primaryTextColor);
+}
+.bc-tabs--capsule .bc-tabs__item--active {
+  border-color: var(--bc-themeColor);
+  color: var(--bc-themeColor);
+  background: var(--bc-themeColor1);
+}
+
+/* card 卡片型 */
+.bc-tabs--card {
+  gap: 0;
+  border-bottom: 1px solid var(--bc-borderColor);
+}
+.bc-tabs--card .bc-tabs__item {
+  font-size: 12px;
+  padding: 8px 20px;
+  border: 1px solid transparent;
+  border-bottom: none;
+}
+.bc-tabs--card .bc-tabs__item--active {
+  border-color: var(--bc-borderColor);
+  background: #fff;
+  border-radius: 6px 6px 0 0;
+}
+
+/* reunit 等分型 */
+.bc-tabs--reunit {
+  width: 100%;
+}
+.bc-tabs--reunit .bc-tabs__item {
+  flex: 1;
+  justify-content: center;
+  font-size: 12px;
+  padding: 16px;
+  border-top: 2px solid transparent;
+}
+.bc-tabs--reunit .bc-tabs__item:hover {
+  background: var(--bc-themeColor1);
+}
+.bc-tabs--reunit .bc-tabs__item--active {
+  border-top-color: var(--bc-themeColor);
+}
+
+.bc-tabs__badge {
+  font-size: 12px;
+  font-weight: 400;
+  color: inherit;
+}

@@ -1,0 +1,67 @@
+.bc-steps {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.bc-step {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1 1 auto;
+}
+
+.bc-step__icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+  background: #fff;
+  border: 1px solid var(--bc-borderColor);
+  color: var(--bc-thirdlyTextColor);
+  z-index: 1;
+}
+
+.bc-step--process .bc-step__icon {
+  border-color: var(--bc-themeColor);
+  color: var(--bc-themeColor);
+}
+
+.bc-step--finish .bc-step__icon {
+  background: var(--bc-themeColor);
+  border-color: var(--bc-themeColor);
+  color: #fff;
+}
+
+.bc-step__title {
+  font-size: 14px;
+  color: var(--bc-primaryTextColor);
+  font-weight: 500;
+}
+.bc-step--wait .bc-step__title {
+  color: var(--bc-thirdlyTextColor);
+  font-weight: 400;
+}
+
+.bc-step__desc {
+  font-size: 12px;
+  color: var(--bc-secondaryTextColor);
+  margin-top: 2px;
+}
+
+.bc-step__line {
+  position: absolute;
+  top: 12px;
+  left: 24px;
+  right: -50%;
+  height: 1px;
+  background: var(--bc-borderColor);
+}
+.bc-step--finish .bc-step__line {
+  background: var(--bc-themeColor);
+}
