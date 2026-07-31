@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OMS 任务管理列表 — Beast Core Design Spec</title>
+<style>
+/* ============================================================
+ * Beast Core + OMS Design Tokens (§2 / §4 / §6 / §8)
+ * ============================================================ */
+:root{
+  --bc-themeColor:#0071f3; --bc-themeColor1:#e6f6ff; --bc-themeColor2:#a3daff;
+  --bc-themeColor4:#52aeff; --bc-themeColor6:#0071f3; --bc-themeColor7:#0058cc;
+  --bc-themeColor8:#0042a6;
+  --bc-dangerColor:#f71010; --bc-danger-hover:#d10209; --bc-danger-active:#ab000b;
+  --bc-successColor:#00bb12; --bc-warnColor:#fb7701;
+  --bc-primaryTextColor:rgba(0,0,0,.8); --bc-secondaryTextColor:rgba(0,0,0,.6);
+  --bc-thirdlyTextColor:rgba(0,0,0,.4); --bc-hintTextColor:rgba(0,0,0,.32);
+  --bc-disabledTextColor:rgba(0,0,0,.24); --bc-placeholderColor:rgba(0,0,0,.32);
+  --bc-bgColor:#fff; --bc-disabledBgColor:#f5f5f5; --bc-borderColor:#dbdbdb;
+  --bc-divideColor:#ebebeb; --bc-trackColor:#f0f0f0; --bc-boxShadowColor:#eef7ff;
+  --bc-canvasBg:#f0f2f5;
+  --bc-linkColor:#0071f3; --bc-link-hover:#0058cc; --bc-link-active:#0042a6;
+  --bc-icon-color:rgba(0,0,0,.4); --bc-icon-hoverColor:rgba(0,0,0,.8);
+  --bc-h-sm:24px; --bc-h-md:28px; --bc-h-lg:40px;
+  --bc-fs-lg:16px; --bc-radius:6px; --bc-toastRadius:3px;
+  --bc-ease:cubic-bezier(0.78,0.14,0.15,0.86);
+  --z-backTop:10; --z-tableFixed:100; --z-select:101; --z-spin:999;
+  --z-modal:1000; --z-toast:1010; --z-popover:1030; --z-dropdown:1050; --z-tooltip:1060;
+  --st-success-icon:#00bb12; --st-success-bg:#e3fae1; --st-success-bd:#9bed98;
+  --st-warn-icon:#fb7701;    --st-warn-bg:#fff6e6;    --st-warn-bd:#ffdaa3;
+  --st-error-icon:#f71010;   --st-error-bg:#ffeae6;   --st-error-bd:#ffbdb3;
+  --st-info-icon:#0071f3;    --st-info-bg:#e6f6ff;    --st-info-bd:#a3daff;
+  --toast-success-shadow:0 2px 8px 0 rgba(0,33,8,.12);
+  --toast-warn-shadow:0 2px 8px 0 rgba(97,66,0,.12);
+  --toast-error-shadow:0 2px 8px 0 rgba(94,0,13,.12);
+  --tag-info-c:#0071f3; --tag-info-bg:#e6f6ff; --tag-info-bd:#52aeff;
+  --tag-warn-c:#ff7300; --tag-warn-bg:#fff5e6; --tag-warn-bd:#ffc37a;
+  --tag-danger-c:#f71010; --tag-danger-bg:#fff2f0; --tag-danger-bd:#ffaca6;
+  --tag-success-c:#00bb12; --tag-success-bg:#e3fae1; --tag-success-bd:#9bed98;
+  --tag-fail-c:rgba(0,0,0,.4); --tag-fail-bg:#ebebeb; --tag-fail-bd:rgba(0,0,0,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:"PingFang SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:12px;line-height:1.5;color:var(--bc-primaryTextColor);background:var(--bc-canvasBg);-webkit-font-smoothing:antialiased}
+a{color:var(--bc-linkColor);text-decoration:none;cursor:pointer}
+a:hover{color:var(--bc-link-hover)}a:active{color:var(--bc-link-active)}
+ul,li{list-style:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+.icon{width:1em;height:1em;display:inline-block;vertical-align:-0.125em;flex:none}
+.icon-line{fill:none;stroke:currentColor}
+/* §9.1 文字工具类 */
+.text_bold{font-weight:600;font-size:14px;color:var(--bc-primaryTextColor)}
+.text_regular{font-weight:400;font-size:12px;color:var(--bc-primaryTextColor)}
+.text_gray{color:var(--bc-thirdlyTextColor)}
+.text_warn{color:#fb7701}
+/* layout helpers (§5.21) */
+.row{display:flex;align-items:center}.row.wrap{flex-wrap:wrap}
+.col{display:flex;flex-direction:column}
+.flex1{flex:1;min-width:0}.ml-auto{margin-left:auto}
+.gap4{gap:4px}.gap8{gap:8px}.gap12{gap:12px}.gap16{gap:16px}.gap24{gap:24px}
+.hidden{display:none!important}
+.w-full{width:100%}
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt24{margin-top:24px}
+/* ====== Layout §12.1 / §5.21 ====== */
+.app{display:flex;min-height:100vh;background:var(--bc-canvasBg)}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:48px;background:#fff;border-bottom:1px solid var(--bc-divideColor);display:flex;align-items:center;padding:0 20px;gap:16px;position:sticky;top:0;z-index:20}
+.search-block{background:#fff;padding:16px 20px 4px;border-bottom:1px solid var(--bc-divideColor)}
+</style>
+<style>
+/* ============================================================ §5.1 Button */
+.bc-btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;height:var(--bc-h-md);padding:0 12px;border-radius:var(--bc-radius);font-size:14px;font-weight:500;white-space:nowrap;transition:all .2s var(--bc-ease);border:1px solid transparent;line-height:1}
+.bc-btn.sm{height:var(--bc-h-sm);font-size:12px;padding:0 12px}
+.bc-btn.lg{height:var(--bc-h-lg);font-size:16px;padding:0 16px;gap:8px}
+.bc-btn:disabled,.bc-btn.disabled{background:var(--bc-disabledBgColor);border-color:var(--bc-borderColor);color:var(--bc-hintTextColor);cursor:not-allowed}
+.bc-btn.primary{background:var(--bc-themeColor);color:#fff;border-color:var(--bc-themeColor)}
+.bc-btn.primary:hover{background:var(--bc-themeColor7);border-color:var(--bc-themeColor7)}
+.bc-btn.primary:active{background:var(--bc-themeColor8);border-color:var(--bc-themeColor8)}
+.bc-btn.secondary{background:#fff;color:var(--bc-themeColor);border-color:var(--bc-themeColor)}
+.bc-btn.secondary:hover{border-color:var(--bc-themeColor7);color:var(--bc-themeColor7)}
+.bc-btn.secondary:active{border-color:var(--bc-themeColor8);color:var(--bc-themeColor8)}
+.bc-btn.gray{background:#fff;color:var(--bc-primaryTextColor);border-color:#adadad}
+.bc-btn.gray:hover{border-color:var(--bc-themeColor7);color:var(--bc-themeColor7)}
+.bc-btn.gray:active{border-color:var(--bc-themeColor8)}
+.bc-btn.danger{background:var(--bc-dangerColor);color:#fff;border-color:var(--bc-dangerColor)}
+.bc-btn.danger:hover{background:var(--bc-danger-hover);border-color:var(--bc-danger-hover)}
+.bc-btn.danger:active{background:var(--bc-danger-active);border-color:var(--bc-danger-active)}
+.bc-btn.secondaryDanger{background:#fff;color:var(--bc-dangerColor);border-color:var(--bc-dangerColor)}
+.bc-btn.secondaryDanger:hover{border-color:var(--bc-danger-hover);color:var(--bc-danger-hover)}
+.bc-btn.textPrimary{background:transparent;color:var(--bc-themeColor);border:none;padding:0}
+.bc-btn.textPrimary:hover{color:var(--bc-themeColor7)}
+.bc-btn.textPrimary:active{color:var(--bc-themeColor8)}
+.bc-btn.text{background:transparent;color:var(--bc-primaryTextColor);border:none;border-bottom:1px solid var(--bc-thirdlyTextColor);border-radius:0;padding:0 0 1px}
+.bc-btn.text:hover{color:var(--bc-themeColor7);border-bottom-color:var(--bc-themeColor7)}
+.bc-btn.text:active{color:var(--bc-themeColor8);border-bottom-color:var(--bc-themeColor8)}
+.bc-btn.iconOnly{padding:0;width:var(--bc-h-md)}
+.bc-btn.iconOnly.sm{width:var(--bc-h-sm)}
+.bc-btn.loading .ic-spin{display:inline-block;animation:spin .8s linear infinite}
+.ic-spin{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn-group .bc-btn+.bc-btn{margin-left:8px}
+.btn-ghost-group{display:inline-flex}
+.btn-ghost-group .bc-btn.gray{border-radius:var(--bc-radius)}
+.btn-ghost-group .bc-btn.gray+.bc-btn.gray{margin-left:10px}
+/* §5.7 Tag */
+.bc-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border-radius:var(--bc-radius);font-size:12px;line-height:1.5;border:1px solid transparent;white-space:nowrap}
+.bc-tag .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.bc-tag.info{color:var(--tag-info-c);background:var(--tag-info-bg);border-color:var(--tag-info-bd)}
+.bc-tag.warn{color:var(--tag-warn-c);background:var(--tag-warn-bg);border-color:var(--tag-warn-bd)}
+.bc-tag.danger{color:var(--tag-danger-c);background:var(--tag-danger-bg);border-color:var(--tag-danger-bd)}
+.bc-tag.success{color:var(--tag-success-c);background:var(--tag-success-bg);border-color:var(--tag-success-bd)}
+.bc-tag.fail{color:var(--tag-fail-c);background:var(--tag-fail-bg);border-color:var(--tag-fail-bd)}
+.bc-tag.gray{color:var(--bc-secondaryTextColor);background:rgba(0,0,0,.04);border:none}
+.bc-tag .tag-close{cursor:pointer;opacity:.6;margin-left:2px}
+.bc-tag .tag-close:hover{opacity:1}
+/* §5.8 Badge */
+.bc-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:var(--bc-radius);background:#ff1818;color:#fff;font-size:11px;font-weight:500;line-height:1}
+.bc-badge.dot{width:8px;height:8px;min-width:0;padding:0;border-radius:50%}
+/* §5.9 Card */
+.bc-card{background:#fff;border:1px solid var(--bc-borderColor);border-radius:0;position:relative}
+.bc-card.checked{border-color:var(--bc-themeColor)}
+.bc-card.checked .card-tri{position:absolute;top:0;right:0;width:0;height:0;border-top:24px solid var(--bc-themeColor);border-left:24px solid transparent}
+.bc-card.checked .card-tri .icon{position:absolute;top:-22px;right:1px;width:14px;height:14px;color:#fff}
+.bc-card-head{height:40px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bc-divideColor);font-size:14px}
+.bc-card-body{padding:12px}
+.bc-card-foot{min-height:40px;padding:12px;border-top:1px solid var(--bc-divideColor)}
+/* §5.20 Divider */
+.bc-divider{border:none;border-top:1px solid var(--bc-divideColor);margin:12px 0}
+.bc-divider.vertical{width:1px;height:0.9em;border:none;border-left:1px solid var(--bc-divideColor);margin:0 8px;display:inline-block;vertical-align:middle}
+/* §5.18 Step */
+.bc-steps{display:flex;align-items:flex-start}
+.bc-step{display:flex;align-items:center;gap:8px;flex:1;position:relative}
+.bc-step .s-num{width:28px;height:28px;border-radius:50%;background:var(--bc-themeColor6);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;flex:none;z-index:1}
+.bc-step.wait .s-num{background:#fff;border:1px solid var(--bc-borderColor);color:var(--bc-thirdlyTextColor)}
+.bc-step.done .s-num{background:var(--bc-themeColor)}
+.bc-step .s-title{font-size:13px;font-weight:500;color:var(--bc-primaryTextColor)}
+.bc-step.wait .s-title{color:var(--bc-thirdlyTextColor)}
+.bc-step .s-desc{font-size:12px;color:var(--bc-thirdlyTextColor)}
+.bc-step .s-line{flex:1;height:1px;background:var(--bc-borderColor);margin:0 8px}
+.bc-step.done .s-line{background:var(--bc-themeColor)}
+.bc-steps.vertical{flex-direction:column;gap:0}
+.bc-steps.vertical .bc-step{flex:none;width:100%;padding-bottom:24px}
+.bc-steps.vertical .bc-step .s-line{position:absolute;left:14px;top:32px;right:auto;bottom:0;width:1px;height:auto;margin:0}
+.bc-steps.vertical .bc-step:last-child{padding-bottom:0}
+</style>
+<style>
+/* §5.2 Input */
+.bc-input{height:var(--bc-h-md);border:1px solid var(--bc-borderColor);border-radius:var(--bc-radius);background:#fff;padding:0 8px;font-size:12px;color:var(--bc-primaryTextColor);display:inline-flex;align-items:center;gap:4px;transition:border-color .2s var(--bc-ease),box-shadow .2s var(--bc-ease);min-width:200px}
+.bc-input.sm{height:var(--bc-h-sm)}
+.bc-input.lg{height:var(--bc-h-lg);font-size:14px;padding:0 12px}
+.bc-input:hover{border-color:var(--bc-themeColor7)}
+.bc-input.focus{border-color:var(--bc-themeColor);box-shadow:0 0 0 2px var(--bc-boxShadowColor)}
+.bc-input.error{border-color:var(--bc-dangerColor)}
+.bc-input input{border:none;outline:none;flex:1;height:100%;background:transparent;font-size:inherit;color:inherit;min-width:0;font-family:inherit}
+.bc-input input::placeholder{color:var(--bc-placeholderColor)}
+.bc-input .addon{background:var(--bc-disabledBgColor);align-self:stretch;display:flex;align-items:center;padding:0 8px;color:var(--bc-thirdlyTextColor)}
+.bc-input .clear-ic{color:var(--bc-icon-color);cursor:pointer;display:none}
+.bc-input .clear-ic:hover{color:var(--bc-icon-hoverColor)}
+.bc-input.has-val .clear-ic{display:flex}
+.bc-input.disabled{background:var(--bc-disabledBgColor);cursor:not-allowed}
+textarea.bc-textarea{width:100%;border:1px solid var(--bc-borderColor);border-radius:var(--bc-radius);padding:6px 8px;font-size:12px;color:var(--bc-primaryTextColor);resize:vertical;outline:none;font-family:inherit;line-height:1.5}
+textarea.bc-textarea:hover{border-color:var(--bc-themeColor7)}
+textarea.bc-textarea:focus{border-color:var(--bc-themeColor);box-shadow:0 0 0 2px var(--bc-boxShadowColor)}
+textarea.bc-textarea::placeholder{color:var(--bc-placeholderColor)}
+/* §5.4 Select (非原生) */
+.bc-select{position:relative;display:inline-block}
+.bc-select-trigger{height:var(--bc-h-md);min-width:200px;border:1px solid var(--bc-borderColor);border-radius:var(--bc-radius);background:#fff;padding:0 8px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;transition:border-color .2s var(--bc-ease),box-shadow .2s var(--bc-ease);font-size:12px;color:var(--bc-primaryTextColor)}
+.bc-select-trigger:hover{border-color:var(--bc-themeColor7)}
+.bc-select.open .bc-select-trigger{border-color:var(--bc-themeColor);box-shadow:0 0 0 2px var(--bc-boxShadowColor)}
+.bc-select-trigger .val{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bc-select-trigger .val.placeholder{color:var(--bc-placeholderColor)}
+.bc-select-trigger .arrow{color:var(--bc-icon-color);transition:transform .2s var(--bc-ease);display:flex}
+.bc-select.open .bc-select-trigger .arrow{transform:rotate(180deg)}
+.bc-select-panel{position:absolute;top:calc(100% + 4px);left:0;min-width:100%;background:#fff;border:1px solid #e8e8e8;border-radius:var(--bc-radius);box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:var(--z-select);padding:4px;max-height:240px;overflow:auto;display:none}
+.bc-select.open .bc-select-panel{display:block}
+.bc-option{padding:5px 8px;line-height:1.5;font-size:12px;color:var(--bc-primaryTextColor);cursor:pointer;border-radius:4px;display:flex;align-items:center;gap:6px}
+.bc-option:hover{background:var(--bc-themeColor1)}
+.bc-option.selected{color:var(--bc-themeColor);font-weight:bold}
+.bc-option.selected .opt-check{display:inline-flex;margin-left:auto;color:var(--bc-themeColor)}
+.opt-check{display:none}
+/* §5.5 Checkbox / Radio (非原生) */
+.bc-checkbox{display:inline-flex;align-items:center;gap:4px;cursor:pointer;user-select:none}
+.bc-checkbox input,.bc-radio input{width:0;height:0;opacity:0;position:absolute}
+.bc-checkbox .box{width:14px;height:14px;border:1px solid var(--bc-borderColor);border-radius:2px;background:#fff;display:inline-flex;align-items:center;justify-content:center;flex:none;transition:all .15s var(--bc-ease);color:#fff}
+.bc-checkbox:hover .box{border-color:var(--bc-themeColor7)}
+.bc-checkbox.checked .box{background:var(--bc-themeColor);border-color:var(--bc-themeColor)}
+.bc-checkbox.indeterminate .box{background:var(--bc-themeColor);border-color:var(--bc-themeColor)}
+.bc-checkbox .box .icon{width:10px;height:10px;display:none}
+.bc-checkbox.checked .box .icon{display:inline-block}
+.bc-checkbox.indeterminate .box .bar{display:inline-block;width:8px;height:2px;background:#fff;border-radius:1px}
+.bc-checkbox.indeterminate .box .icon{display:none}
+.bc-checkbox.disabled .box{background:var(--bc-disabledBgColor);border-color:var(--bc-borderColor)}
+.bc-radio{display:inline-flex;align-items:center;gap:4px;cursor:pointer;user-select:none}
+.bc-radio .box{width:14px;height:14px;border:1px solid var(--bc-borderColor);border-radius:50%;background:#fff;display:inline-flex;align-items:center;justify-content:center;flex:none;transition:all .15s var(--bc-ease)}
+.bc-radio:hover .box{border-color:var(--bc-themeColor7)}
+.bc-radio.checked .box{border-color:var(--bc-themeColor)}
+.bc-radio.checked .box .dot{width:8px;height:8px;border-radius:50%;background:var(--bc-themeColor)}
+.bc-radio .box .dot{display:none}
+.bc-radio.checked .box .dot{display:block}
+/* button tag mode (§5.5 buttonTagMode) */
+.bc-checkbox-group.btn-mode{display:inline-flex}
+.bc-checkbox-group.btn-mode .bc-checkbox{height:var(--bc-h-md);padding:0 12px;border:1px solid var(--bc-borderColor);border-radius:var(--bc-radius);background:#fff;color:var(--bc-themeColor);font-size:12px}
+.bc-checkbox-group.btn-mode .bc-checkbox .box{display:none}
+.bc-checkbox-group.btn-mode .bc-checkbox+.bc-checkbox{margin-left:10px}
+.bc-checkbox-group.btn-mode .bc-checkbox.checked{background:var(--bc-themeColor);color:#fff;border-color:var(--bc-themeColor)}
+/* §5.6 Switch */
+.bc-switch{display:inline-flex;align-items:center;cursor:pointer}
+.bc-switch.sm .track{width:32px;height:16px}
+.bc-switch.sm .track .thumb{width:12px;height:12px}
+.bc-switch .track{width:48px;height:24px;border-radius:12px;background:var(--bc-borderColor);position:relative;transition:background .2s var(--bc-ease)}
+.bc-switch .thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s var(--bc-ease);box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.bc-switch.on .track{background:var(--bc-themeColor)}
+.bc-switch.on .thumb{left:27px}
+.bc-switch.sm.on .thumb{left:17px}
+.bc-switch:hover:not(.on) .track{background:rgba(0,0,0,.32)}
+.bc-switch.on:hover .track{background:var(--bc-themeColor7)}
+.bc-switch.disabled{cursor:not-allowed;opacity:.6}
+/* §5.3 Form */
+.bc-form{display:flex;flex-wrap:wrap;gap:16px 24px}
+.bc-form-item{display:flex;align-items:flex-start;min-width:0}
+.bc-form-item .label{width:96px;text-align:right;line-height:28px;color:var(--bc-secondaryTextColor);margin-right:16px;flex:none;font-size:12px;white-space:nowrap}
+.bc-form-item .label .req{color:var(--bc-dangerColor);margin-right:2px}
+.bc-form-item .ctrl{min-width:200px}
+.bc-form-item .err-text{font-size:11px;color:var(--bc-dangerColor);margin-top:4px;line-height:1.4}
+.bc-form-item.error .bc-input,.bc-form-item.error .bc-select-trigger{border-color:var(--bc-dangerColor)}
+.shaking{animation:shake .4s var(--bc-ease)}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+/* §5.23 DatePicker / RangePicker (非原生) */
+.bc-rangepicker{height:var(--bc-h-md);border:1px solid var(--bc-borderColor);border-radius:var(--bc-radius);background:#fff;display:inline-flex;align-items:center;padding:0 8px;cursor:pointer;transition:border-color .2s var(--bc-ease),box-shadow .2s var(--bc-ease);min-width:280px;font-size:12px;position:relative}
+.bc-rangepicker:hover{border-color:var(--bc-themeColor7)}
+.bc-rangepicker.open{border-color:var(--bc-themeColor);box-shadow:0 0 0 2px var(--bc-boxShadowColor)}
+.bc-rangepicker .cal-icon{color:var(--bc-icon-color);margin-right:6px}
+.bc-rangepicker .rp-input{min-width:90px;text-align:center;color:var(--bc-primaryTextColor)}
+.bc-rangepicker .rp-input.placeholder{color:var(--bc-placeholderColor)}
+.bc-rangepicker .rp-sep{color:var(--bc-thirdlyTextColor);padding:0 4px}
+.cal-panel{position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid #e8e8e8;border-radius:var(--bc-radius);box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:var(--z-select);padding:12px;width:280px;display:none}
+.bc-rangepicker.open .cal-panel{display:block}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:12px;font-weight:500}
+.cal-head .nav{color:var(--bc-icon-color);cursor:pointer;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px}
+.cal-head .nav:hover{background:var(--bc-themeColor1);color:var(--bc-themeColor)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-cell{height:30px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--bc-primaryTextColor);cursor:pointer;border-radius:4px}
+.cal-cell.dim{color:var(--bc-disabledTextColor)}
+.cal-cell:hover{background:var(--bc-themeColor1)}
+.cal-cell.today{border:1px solid var(--bc-themeColor)}
+.cal-cell.in-range{background:var(--bc-themeColor1)}
+.cal-cell.range-end,.cal-cell.range-start{background:var(--bc-themeColor);color:#fff}
+.cal-week{text-align:center;font-size:11px;color:var(--bc-thirdlyTextColor);padding:4px 0}
+</style>
+<style>
+/* §5.10 Table */
+.bc-table{width:100%;background:#fff;border-collapse:collapse;font-size:12px}
+.bc-table thead th{background:#f5f5f5;color:var(--bc-primaryTextColor);font-weight:500;line-height:18px;padding:9px 12px;text-align:left;border-bottom:1px solid var(--bc-divideColor);white-space:nowrap;position:sticky;top:0;z-index:var(--z-tableFixed)}
+.bc-table tbody td{padding:9px 12px;border-bottom:1px solid var(--bc-divideColor);color:var(--bc-primaryTextColor);vertical-align:top}
+.bc-table tbody tr:hover td{background:var(--bc-themeColor1)}
+.bc-table tbody tr.selected td{background:var(--bc-themeColor1)}
+.bc-table .th-sort{cursor:pointer;display:inline-flex;align-items:center;gap:2px}
+.bc-table .th-sort .sort-ic{color:var(--bc-icon-color);display:flex;flex-direction:column;font-size:8px;line-height:8px}
+.bc-table .th-sort.asc .sort-ic .up,.bc-table .th-sort.desc .sort-ic .down{color:var(--bc-themeColor)}
+.bc-table-wrap{overflow:auto;position:relative}
+.bc-table-empty{padding:48px 0;text-align:center}
+.bc-table-empty .em-icon{font-size:48px;color:var(--bc-borderColor);margin-bottom:12px}
+.bc-table-empty .em-title{font-size:16px;color:#000;margin-bottom:4px}
+.bc-table-empty .em-desc{font-size:12px;color:#999}
+/* §5.17 Pagination (线型V形箭头) */
+.bc-pagination{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:12px 20px;height:var(--bc-h-md)}
+.bc-pagination .total{font-weight:400;color:var(--bc-secondaryTextColor);margin-right:auto;font-size:12px}
+.pg-item{min-width:var(--bc-h-md);height:var(--bc-h-md);display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--bc-borderColor);border-radius:var(--bc-radius);background:#fff;color:var(--bc-primaryTextColor);cursor:pointer;font-size:12px;padding:0 4px;transition:all .15s var(--bc-ease)}
+.pg-item:hover{color:var(--bc-themeColor7);border-color:var(--bc-themeColor7)}
+.pg-item.active{background:var(--bc-themeColor);color:#fff;border-color:var(--bc-themeColor)}
+.pg-item.disabled{color:rgba(0,0,0,.14);border-color:#ccc;cursor:not-allowed}
+.pg-item.disabled:hover{color:rgba(0,0,0,.14);border-color:#ccc}
+.pg-jump{color:var(--bc-icon-color);font-size:12px}
+.pg-size{margin-right:12px}
+/* §5.16 Tab */
+.bc-tabs{display:flex;align-items:center}
+.bc-tabs.line{border-bottom:1px solid #e8e8e8}
+.bc-tab{cursor:pointer;position:relative;color:var(--bc-secondaryTextColor);transition:color .2s var(--bc-ease)}
+.bc-tabs.line .bc-tab{font-size:16px;padding:0 12px;height:40px;line-height:40px}
+.bc-tabs.line .bc-tab:hover{color:var(--bc-themeColor)}
+.bc-tabs.line .bc-tab.active{color:var(--bc-themeColor);font-weight:500}
+.bc-tabs.line .bc-tab.active::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;background:var(--bc-themeColor);border-radius:1px}
+.bc-tabs.capsule .bc-tab{font-size:12px;padding:7px 16px;border:1px solid var(--bc-borderColor);border-radius:0;color:var(--bc-primaryTextColor)}
+.bc-tabs.capsule .bc-tab+.bc-tab{border-left:none}
+.bc-tabs.capsule .bc-tab:hover{color:var(--bc-themeColor)}
+.bc-tabs.capsule .bc-tab.active{color:var(--bc-themeColor);border-top:2px solid var(--bc-themeColor);font-weight:600;margin-top:-1px}
+.bc-tabs.card .bc-tab{font-size:12px;padding:8px 20px;border:1px solid var(--bc-borderColor);border-radius:var(--bc-radius);background:#fff;color:var(--bc-primaryTextColor)}
+.bc-tabs.card .bc-tab+.bc-tab{margin-left:4px}
+.bc-tabs.card .bc-tab.active{background:var(--bc-themeColor);color:#fff;border-color:var(--bc-themeColor)}
+/* §5.19 Breadcrumb */
+.bc-breadcrumb{display:flex;align-items:center;gap:6px;font-size:13px}
+.bc-breadcrumb a{color:var(--bc-secondaryTextColor)}
+.bc-breadcrumb a:hover{color:var(--bc-themeColor6)}
+.bc-breadcrumb a:active{color:var(--bc-themeColor7)}
+.bc-breadcrumb .cur{color:var(--bc-primaryTextColor)}
+.bc-breadcrumb .sep{color:var(--bc-divideColor)}
+/* §5.19 Menu */
+.bc-menu{width:200px;background:#fff;border-right:1px solid var(--bc-divideColor);flex:none;padding:8px 0;position:sticky;top:0;height:100vh;overflow:auto}
+.bc-menu-logo{height:40px;display:flex;align-items:center;gap:8px;padding:0 16px;font-weight:600;font-size:15px}
+.bc-menu-logo .dot{width:18px;height:18px;border-radius:4px;background:var(--bc-themeColor)}
+.bc-menu-item{height:40px;line-height:40px;padding:0 16px;font-size:13px;color:var(--bc-secondaryTextColor);display:flex;align-items:center;gap:8px;position:relative;cursor:pointer}
+.bc-menu-item:hover{background:var(--bc-themeColor1);color:var(--bc-themeColor)}
+.bc-menu-item.active{color:var(--bc-themeColor);font-weight:600;background:var(--bc-themeColor1)}
+.bc-menu-item.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--bc-themeColor)}
+.bc-menu-group-title{padding:12px 16px 4px;font-size:11px;color:var(--bc-hintTextColor)}
+/* §5.19 Dropdown */
+.bc-dropdown{position:relative;display:inline-block}
+.bc-dropdown .menu{position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid #eee;border-radius:var(--bc-radius);box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:var(--z-dropdown);min-width:120px;padding:4px;display:none}
+.bc-dropdown.open .menu{display:block}
+.bc-dropdown .menu-item{padding:6px 12px;font-size:12px;color:var(--bc-primaryTextColor);cursor:pointer;border-radius:4px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.bc-dropdown .menu-item:hover{background:var(--bc-themeColor1);color:var(--bc-themeColor)}
+.bc-dropdown .menu-item.danger{color:var(--bc-dangerColor)}
+.bc-dropdown .menu-item.danger:hover{background:#fff2f0}
+.bc-dropdown .menu-div{height:1px;background:var(--bc-divideColor);margin:4px 0}
+/* §5.22 NoticeBar (§2.9 三件套) */
+.bc-noticebar{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:var(--bc-toastRadius);font-size:12px;line-height:1.5}
+.bc-noticebar .nb-icon{font-size:16px;flex:none;margin-top:1px}
+.bc-noticebar .nb-content{flex:1;color:var(--bc-primaryTextColor)}
+.bc-noticebar .nb-close{color:var(--bc-icon-color);cursor:pointer;font-size:16px;flex:none}
+.bc-noticebar .nb-close:hover{color:var(--bc-icon-hoverColor)}
+.bc-noticebar.info{background:var(--st-info-bg);border:1px solid var(--st-info-bd)}
+.bc-noticebar.info .nb-icon{color:var(--st-info-icon)}
+.bc-noticebar.warn{background:var(--st-warn-bg);border:1px solid var(--st-warn-bd)}
+.bc-noticebar.warn .nb-icon{color:var(--st-warn-icon)}
+.bc-noticebar.success{background:var(--st-success-bg);border:1px solid var(--st-success-bd)}
+.bc-noticebar.success .nb-icon{color:var(--st-success-icon)}
+.bc-noticebar.error{background:var(--st-error-bg);border:1px solid var(--st-error-bd)}
+.bc-noticebar.error .nb-icon{color:var(--st-error-icon)}
+/* §9.2 信息提示块 (Status Block) */
+.status-block{border-radius:var(--bc-radius);padding:12px;display:flex;align-items:flex-start;gap:8px;position:relative}
+.status-block .sb-icon{font-size:14px;flex:none;position:absolute;right:12px;top:12px}
+.status-block .sb-content{flex:1;font-size:12px;color:var(--bc-secondaryTextColor)}
+.status-block .sb-strong{font-size:13px;font-weight:600;margin-bottom:2px}
+.status-block.needConfirm{background:var(--st-warn-bg);border:1px solid var(--st-warn-bd)}
+.status-block.needConfirm .sb-strong,.status-block.needConfirm .sb-icon{color:#fb7701}
+.status-block.alreadyConfirm{background:var(--st-success-bg);border:1px solid var(--st-success-bd)}
+.status-block.alreadyConfirm .sb-strong,.status-block.alreadyConfirm .sb-icon{color:#00bb12}
+/* §9.3 批量操作头部 */
+.batch-header{position:sticky;top:0;z-index:5;background:#fff;padding:16px 20px 8px}
+.batch-tip{padding:12px;background:rgba(0,0,0,.02);border-radius:var(--bc-radius);font-size:14px;color:var(--bc-secondaryTextColor)}
+.batch-tip .strong{color:#ff7300}
+</style>
+<style>
+/* §5.11 Modal */
+.bc-modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:var(--z-modal);display:none;align-items:flex-start;justify-content:center;padding-top:8vh}
+.bc-modal-mask.show{display:flex}
+.bc-modal{background:#fff;border-radius:var(--bc-radius);min-width:320px;max-width:92vw;max-height:84vh;display:flex;flex-direction:column;animation:modalIn .2s var(--bc-ease)}
+@keyframes modalIn{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+.bc-modal-head{padding:8px 12px;font-size:16px;font-weight:500;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bc-divideColor)}
+.bc-modal-head .close{color:var(--bc-icon-color);font-size:16px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.bc-modal-head .close:hover{color:var(--bc-icon-hoverColor)}
+.bc-modal-body{padding:24px 24px 20px;font-size:12px;line-height:20px;overflow:auto}
+.bc-modal-foot{padding:12px 24px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--bc-divideColor)}
+/* §5.20 / §9.5 Drawer (全宽抽屉) */
+.bc-drawer-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:var(--z-modal);display:none}
+.bc-drawer-mask.show{display:block}
+.bc-drawer{position:fixed;top:0;right:0;height:100vh;width:calc(100vw - 32px);max-width:2488px;min-width:900px;background:#fff;z-index:calc(var(--z-modal) + 1);transform:translateX(100%);transition:transform .25s var(--bc-ease);display:flex;flex-direction:column}
+.bc-drawer.show{transform:translateX(0)}
+.bc-drawer-head{height:48px;padding:0 16px 0 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bc-divideColor);font-size:15px;font-weight:500}
+.bc-drawer-head .close{color:var(--bc-icon-color);font-size:18px;cursor:pointer}
+.bc-drawer-head .close:hover{color:var(--bc-icon-hoverColor)}
+.bc-drawer-body{flex:1;overflow:auto;padding:24px;min-width:800px}
+.bc-drawer-foot{padding:12px 24px;border-top:1px solid var(--bc-divideColor);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:#fff}
+</style>
+<style>
+/* §5.12 Toast */
+.bc-toast-wrap{position:fixed;top:56px;left:50%;transform:translateX(-50%);z-index:var(--z-toast);display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.bc-toast{display:flex;align-items:flex-start;gap:8px;padding:10px 16px;border-radius:var(--bc-toastRadius);font-size:14px;max-width:766px;border:1px solid transparent;animation:toastIn .3s cubic-bezier(0.55,0,0.55,0.2);background:#fff}
+@keyframes toastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.bc-toast.out{animation:toastOut .3s cubic-bezier(0.55,0,0.55,0.2) forwards}
+@keyframes toastOut{to{opacity:0;transform:translateY(-8px)}}
+.bc-toast .t-icon{font-size:14px;flex:none;margin-top:2px}
+.bc-toast.success{background:var(--st-success-bg);border-color:var(--st-success-bd);box-shadow:var(--toast-success-shadow)}
+.bc-toast.success .t-icon{color:var(--st-success-icon)}
+.bc-toast.warn{background:var(--st-warn-bg);border-color:var(--st-warn-bd);box-shadow:var(--toast-warn-shadow)}
+.bc-toast.warn .t-icon{color:var(--st-warn-icon)}
+.bc-toast.error{background:var(--st-error-bg);border-color:var(--st-error-bd);box-shadow:var(--toast-error-shadow)}
+.bc-toast.error .t-icon{color:var(--st-error-icon)}
+/* §5.15 Spin / §9.11 加载蒙层 */
+.bc-spin{position:absolute;inset:0;background:rgba(238,238,238,.4);z-index:var(--z-spin);display:none;align-items:center;justify-content:center}
+.bc-spin.show{display:flex}
+.bc-spin .ring{width:28px;height:28px;border:3px solid var(--bc-themeColor);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}
+/* §5.14 Progress */
+.bc-progress{display:flex;align-items:center;gap:8px}
+.bc-progress .track{flex:1;height:8px;background:var(--bc-trackColor);border-radius:4px;overflow:hidden}
+.bc-progress .fill{height:100%;background:var(--bc-themeColor);border-radius:4px;transition:width .3s var(--bc-ease)}
+.bc-progress.exception .fill{background:#ff1818}
+.bc-progress .pct{font-size:12px;color:var(--bc-secondaryTextColor);min-width:36px;text-align:right}
+/* §5.13 Tooltip / Popover */
+.bc-tooltip{position:relative;display:inline-flex}
+.bc-tooltip .tip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#fff;color:var(--bc-primaryTextColor);padding:5px 9px;border-radius:var(--bc-radius);font-size:12px;white-space:nowrap;box-shadow:0 2px 8px 0 rgba(0,0,0,.4);z-index:var(--z-tooltip);opacity:0;pointer-events:none;transition:opacity .15s var(--bc-ease)}
+.bc-tooltip .tip::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:#fff}
+.bc-tooltip:hover .tip{opacity:1}
+.bc-popover{position:relative;display:inline-block}
+.bc-popover .pop{position:absolute;top:calc(100% + 8px);right:0;background:#fff;border-radius:var(--bc-radius);box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:var(--z-popover);padding:12px;min-width:200px;display:none;border:1px solid #eee}
+.bc-popover.open .pop{display:block}
+.bc-popover .pop-title{font-size:14px;font-weight:600;margin-bottom:8px}
+/* §5.8 BackTop */
+.bc-backtop{position:fixed;right:24px;bottom:80px;width:40px;height:40px;border-radius:50%;background:#fff;border:1px solid var(--bc-borderColor);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:var(--z-backTop);box-shadow:0 2px 8px rgba(0,0,0,.15);color:var(--bc-icon-color)}
+.bc-backtop:hover{color:var(--bc-themeColor);border-color:var(--bc-themeColor)}
+/* §9.4 状态标签页 */
+.status-tabs{display:flex;align-items:center;gap:24px;padding:0 20px;height:44px;background:#fff;border-bottom:1px solid var(--bc-divideColor)}
+.status-tab{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--bc-secondaryTextColor);cursor:pointer;height:100%;position:relative;font-weight:500}
+.status-tab .num{font-size:12px;font-weight:400;color:var(--bc-thirdlyTextColor)}
+.status-tab:hover{color:var(--bc-themeColor)}
+.status-tab.active{color:var(--bc-themeColor);font-weight:600}
+.status-tab.active .num{color:var(--bc-themeColor)}
+.status-tab.active::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--bc-themeColor)}
+/* §9.5 全宽抽屉业务区 */
+.drawer-anchor{width:170px;position:absolute}
+.drawer-left-img{width:228px;flex:none}
+.drawer-grey-block{background:rgba(0,0,0,.04);border-radius:var(--bc-radius);padding:16px}
+/* §9.6 商品卡片 */
+.goods-card{font-size:12px;line-height:18px}
+.goods-card .gc-title{color:var(--bc-primaryTextColor);font-weight:600}
+.goods-card .gc-desc{color:var(--bc-secondaryTextColor)}
+.goods-card .gc-extra{border-top:1px dashed rgba(0,0,0,.32);padding-top:8px;margin-top:8px}
+/* §9.7 模特卡 */
+.model-card{max-width:620px;display:flex;border:1px solid #dadada;border-radius:var(--bc-radius);padding:18px 16px;transition:background .2s var(--bc-ease)}
+.model-card:hover{background:#fff6e6}
+.model-card .mc-name{font-size:14px;color:var(--bc-primaryTextColor);height:20px;font-weight:600}
+.model-card .mc-row{display:flex;font-size:12px;line-height:20px;margin-top:6px}
+.model-card .mc-label{width:110px;color:var(--bc-secondaryTextColor)}
+.model-card .mc-val{color:var(--bc-primaryTextColor)}
+/* §9.8 图片预览面板 */
+.preview-panel{width:350px;border:1px solid var(--bc-divideColor);border-radius:var(--bc-radius);flex:none}
+.preview-panel .pp-head{height:40px;padding:0 12px;display:flex;align-items:center;font-size:12px;border-bottom:1px solid rgba(0,0,0,.2)}
+.preview-panel .pp-view{height:320px;overflow:auto;display:flex;gap:8px;padding:8px}
+.preview-panel .pp-img{width:100%;min-height:200px;background:#f5f5f5;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--bc-icon-color);flex:none}
+.preview-panel .pp-tools{width:50px;display:flex;flex-direction:column;align-items:center;gap:12px;padding:8px 0;border-left:1px solid var(--bc-divideColor)}
+.preview-panel .pp-tool{color:var(--bc-themeColor);cursor:pointer;font-size:18px}
+.preview-panel .pp-tool.disabled{color:var(--bc-borderColor);cursor:not-allowed}
+/* §9.9 SKU 图片生成画布 */
+.sku-canvas{width:360px;height:360px;padding:20px;background:#fff;flex:none;border:1px dashed var(--bc-borderColor)}
+.sku-canvas .sc-top{background:rgba(0,0,0,.04);border-radius:12px;padding:16px}
+.sku-canvas .sc-title{font-size:28px;font-weight:900;line-height:1.2}
+.sku-canvas .sc-item{font-size:16px;font-weight:600;line-height:24px;margin-top:6px}
+.sku-canvas .sc-bottom{display:flex;gap:8px;margin-top:12px}
+.sku-canvas .sc-pic{flex:1;height:180px;background:#f5f5f5;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--bc-icon-color);position:relative}
+.sku-canvas .sc-pic .sc-no{position:absolute;right:8px;bottom:8px;width:60px;height:36px;background:rgba(0,0,0,.5);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+/* §9.10 底部固定操作栏 */
+.footer-block{position:sticky;bottom:0;z-index:101;background:#fff;padding:12px 20px;margin:0 -20px;border-top:1px solid var(--bc-divideColor)}
+/* §5.21 Grid */
+.bc-row{display:flex;flex-wrap:wrap}
+.bc-col{position:relative;min-height:1px}
+</style>
+</head>
+<body>
+<!-- ====== SVG Icon Sprite (§2.7 实心填充圆 / §2.8 线型V形箭头 / 附录D·E·F) ====== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!-- §2.7 实心填充圆形图标 -->
+  <symbol id="i-info" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 64C264.8 64 64 264.8 64 512s200.8 448 448 448 448-200.8 448-448S759.2 64 512 64z"/><circle fill="#fff" cx="512" cy="312" r="46"/><rect fill="#fff" x="466" y="404" width="92" height="320" rx="46"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 64C264.8 64 64 264.8 64 512s200.8 448 448 448 448-200.8 448-448S759.2 64 512 64z"/><rect fill="#fff" x="466" y="270" width="92" height="360" rx="46"/><circle fill="#fff" cx="512" cy="722" r="50"/></symbol>
+  <symbol id="i-error" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 64C264.8 64 64 264.8 64 512s200.8 448 448 448 448-200.8 448-448S759.2 64 512 64z"/><g fill="#fff"><rect x="468" y="312" width="88" height="400" rx="44" transform="rotate(45 512 512)"/><rect x="468" y="312" width="88" height="400" rx="44" transform="rotate(-45 512 512)"/></g></symbol>
+  <symbol id="i-success" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 64C264.8 64 64 264.8 64 512s200.8 448 448 448 448-200.8 448-448S759.2 64 512 64z"/><polyline fill="none" stroke="#fff" stroke-width="84" stroke-linecap="round" stroke-linejoin="round" points="372,542 470,650 680,372"/></symbol>
+  <!-- §2.8 线型 V 形箭头 -->
+  <symbol id="i-down" viewBox="0 0 1024 1024"><polyline class="icon-line" stroke-width="88" stroke-linecap="round" stroke-linejoin="round" points="250,380 512,642 774,380"/></symbol>
+  <symbol id="i-left" viewBox="0 0 1024 1024"><polyline class="icon-line" stroke-width="88" stroke-linecap="round" stroke-linejoin="round" points="644,250 382,512 644,774"/></symbol>
+  <symbol id="i-right" viewBox="0 0 1024 1024"><polyline class="icon-line" stroke-width="88" stroke-linecap="round" stroke-linejoin="round" points="380,250 642,512 380,774"/></symbol>
+  <!-- §附录F 勾选图标 -->
+  <symbol id="i-check" viewBox="0 0 1024 1024"><polyline class="icon-line" stroke-width="80" stroke-linecap="round" stroke-linejoin="round" points="270,540 432,702 760,300"/></symbol>
+  <!-- 通用线性图标 -->
+  <symbol id="i-close" viewBox="0 0 1024 1024"><polyline class="icon-line" stroke-width="80" stroke-linecap="round" points="300,300 724,724"/><polyline class="icon-line" stroke-width="80" stroke-linecap="round" points="724,300 300,724"/></symbol>
+  <symbol id="i-search" viewBox="0 0 1024 1024"><circle class="icon-line" stroke-width="72" cx="450" cy="450" r="250"/><line class="icon-line" stroke-width="72" stroke-linecap="round" x1="640" y1="640" x2="820" y2="820"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 1024 1024"><line class="icon-line" stroke-width="80" stroke-linecap="round" x1="512" y1="240" x2="512" y2="784"/><line class="icon-line" stroke-width="80" stroke-linecap="round" x1="240" y1="512" x2="784" y2="512"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 1024 1024"><path class="icon-line" stroke-width="72" stroke-linecap="round" stroke-linejoin="round" d="M240 512a272 272 0 0 1 464-192"/><path class="icon-line" stroke-width="72" stroke-linecap="round" stroke-linejoin="round" d="M784 512a272 272 0 0 1-464 192"/><polyline class="icon-line" stroke-width="72" stroke-linecap="round" stroke-linejoin="round" points="704,200 704,360 544,360"/><polyline class="icon-line" stroke-width="72" stroke-linecap="round" stroke-linejoin="round" points="320,824 320,664 480,664"/></symbol>
+  <symbol id="i-export" viewBox="0 0 1024 1024"><path class="icon-line" stroke-width="72" stroke-linecap="round" stroke-linejoin="round" d="M544 128H224a48 48 0 0 0-48 48v672a48 48 0 0 0 48 48h576a48 48 0 0 0 48-48V448"/><polyline class="icon-line" stroke-width="72" stroke-linecap="round" stroke-linejoin="round" points="672,128 896,128 896,352"/><line class="icon-line" stroke-width="72" stroke-linecap="round" x1="544" y1="480" x2="896" y2="128"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 1024 1024"><rect class="icon-line" stroke-width="72" x="256" y="448" width="512" height="416" rx="40"/><path class="icon-line" stroke-width="72" stroke-linecap="round" stroke-linejoin="round" d="M352 448V320a160 160 0 0 1 320 0v128"/><circle class="icon-line" stroke-width="72" cx="512" cy="656" r="40"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 1024 1024"><rect class="icon-line" stroke-width="72" x="160" y="192" width="704" height="640" rx="40"/><line class="icon-line" stroke-width="72" stroke-linecap="round" x1="160" y1="384" x2="864" y2="384"/><line class="icon-line" stroke-width="72" stroke-linecap="round" x1="352" y1="96" x2="352" y2="288"/><line class="icon-line" stroke-width="72" stroke-linecap="round" x1="672" y1="96" x2="672" y2="288"/></symbol>
+  <symbol id="i-up" viewBox="0 0 1024 1024"><polyline class="icon-line" stroke-width="88" stroke-linecap="round" stroke-linejoin="round" points="250,644 512,382 774,644"/></symbol>
+</svg>
+
+<!-- ====== §5.21 Layout: Menu 侧边栏 + 主内容 ====== -->
+<div class="app">
+  <!-- §5.19 Menu -->
+  <aside class="bc-menu">
+    <div class="bc-menu-logo"><span class="dot"></span>OMS 控制台</div>
+    <div class="bc-menu-group-title">任务管理</div>
+    <div class="bc-menu-item active">任务列表</div>
+    <div class="bc-menu-item">任务配置</div>
+    <div class="bc-menu-item">执行记录</div>
+    <div class="bc-menu-group-title">系统</div>
+    <div class="bc-menu-item">权限管理</div>
+    <div class="bc-menu-item">操作日志</div>
+  </aside>
+
+  <main class="main">
+    <!-- Topbar + §5.19 Breadcrumb -->
+    <div class="topbar">
+      <nav class="bc-breadcrumb">
+        <a href="#">首页</a><span class="sep">/</span>
+        <a href="#">任务管理</a><span class="sep">/</span>
+        <span class="cur">任务列表</span>
+      </nav>
+      <div class="ml-auto row gap8">
+        <button class="bc-btn gray sm"><svg class="icon"><use href="#i-refresh"/></svg>刷新</button>
+        <span class="bc-badge">3</span>
+      </div>
+    </div>
+
+    <!-- §12.1 ① 顶部业务 Tabs (line型) -->
+    <div class="bc-tabs line" style="padding:0 20px;background:#fff;border-bottom:1px solid #e8e8e8">
+      <div class="bc-tab active">全托管任务</div>
+      <div class="bc-tab">半托管任务</div>
+      <div class="bc-tab">本地任务</div>
+      <div class="bc-tab">高分品牌任务</div>
+    </div>
+
+    <!-- §9.4 状态标签页 (带数字统计) -->
+    <div class="status-tabs">
+      <div class="status-tab active">全部<span class="num">(2050)</span></div>
+      <div class="status-tab">待处理<span class="num">(329)</span></div>
+      <div class="status-tab">处理中<span class="num">(186)</span></div>
+      <div class="status-tab">待审核<span class="num">(58)</span></div>
+      <div class="status-tab">已完成<span class="num">(1421)</span></div>
+      <div class="status-tab">已取消<span class="num">(56)</span></div>
+    </div>
+
+    <!-- §12.1 ② 筛选条件区 (§5.3 Form) -->
+    <div class="search-block">
+      <div class="bc-form">
+        <!-- Input (带清除/搜索) -->
+        <div class="bc-form-item">
+          <div class="label">任务名称</div>
+          <div class="ctrl">
+            <div class="bc-input has-val" style="min-width:240px">
+              <svg class="icon" style="color:var(--bc-icon-color)"><use href="#i-search"/></svg>
+              <input value="商品上架自动校验" placeholder="请输入任务名称" />
+              <svg class="icon clear-ic"><use href="#i-close"/></svg>
+            </div>
+          </div>
+        </div>
+        <!-- Select (非原生) -->
+        <div class="bc-form-item">
+          <div class="label"><span class="req">*</span>任务类型</div>
+          <div class="ctrl">
+            <div class="bc-select" data-select>
+              <div class="bc-select-trigger"><span class="val">定时任务</span><span class="arrow"><svg class="icon"><use href="#i-down"/></svg></span></div>
+              <div class="bc-select-panel">
+                <div class="bc-option selected">定时任务<span class="opt-check"><svg class="icon"><use href="#i-check"/></svg></span></div>
+                <div class="bc-option">即时任务<span class="opt-check"><svg class="icon"><use href="#i-check"/></svg></span></div>
+                <div class="bc-option">周期任务<span class="opt-check"><svg class="icon"><use href="#i-check"/></svg></span></div>
+                <div class="bc-option">事件触发<span class="opt-check"><svg class="icon"><use href="#i-check"/></svg></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Select2 -->
+        <div class="bc-form-item">
+          <div class="label">执行状态</div>
+          <div class="ctrl">
+            <div class="bc-select" data-select>
+              <div class="bc-select-trigger"><span class="val placeholder">请选择</span><span class="arrow"><svg class="icon"><use href="#i-down"/></svg></span></div>
+              <div class="bc-select-panel">
+                <div class="bc-option">待处理<span class="opt-check"><svg class="icon"><use href="#i-check"/></svg></span></div>
+                <div class="bc-option">处理中<span class="opt-check"><svg class="icon"><use href="#i-check"/></svg></span></div>
+                <div class="bc-option">已完成<span class="opt-check"><svg class="icon"><use href="#i-check"/></svg></span></div>
+                <div class="bc-option">失败<span class="opt-check"><svg class="icon"><use href="#i-check"/></svg></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- RangePicker (非原生) -->
+        <div class="bc-form-item">
+          <div class="label">创建时间</div>
+          <div class="ctrl">
+            <div class="bc-rangepicker" data-rangepicker>
+              <svg class="icon cal-icon"><use href="#i-cal"/></svg>
+              <span class="rp-input">2026-07-01</span>
+              <span class="rp-sep">~</span>
+              <span class="rp-input">2026-07-31</span>
+            </div>
+          </div>
+        </div>
+        <!-- Checkbox button tag mode -->
+        <div class="bc-form-item">
+          <div class="label">优先级</div>
+          <div class="ctrl">
+            <div class="bc-checkbox-group btn-mode">
+              <label class="bc-checkbox checked"><input type="checkbox" checked/>高优</label>
+              <label class="bc-checkbox"><input type="checkbox"/>普通</label>
+              <label class="bc-checkbox"><input type="checkbox"/>低优</label>
+            </div>
+          </div>
+        </div>
+        <!-- Switch -->
+        <div class="bc-form-item">
+          <div class="label">仅看异常</div>
+          <div class="ctrl" style="line-height:28px">
+            <div class="bc-switch" data-switch><div class="track"><div class="thumb"></div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="row gap8" style="padding:12px 0">
+        <button class="bc-btn primary"><svg class="icon"><use href="#i-search"/></svg>查询</button>
+        <button class="bc-btn gray"><svg class="icon"><use href="#i-refresh"/></svg>重置</button>
+        <a href="#" class="ml-auto" style="line-height:28px">保存快照</a>
+      </div>
+    </div>
+    <!-- §12.1 ③ 业务提示通知条 (§5.22 NoticeBar info三件套) -->
+    <div style="padding:12px 20px 0;background:#fff">
+      <div class="bc-noticebar info">
+        <svg class="icon nb-icon"><use href="#i-info"/></svg>
+        <div class="nb-content">当前列表最多展示最近 30 天的任务记录，如需查看更早数据请使用「导出」功能。每页最多展示 200 条，超出请缩小筛选范围。</div>
+        <svg class="icon nb-close"><use href="#i-close"/></svg>
+      </div>
+    </div>
+
+    <!-- §12.1 ④ 批量操作与工具栏 -->
+    <div class="row" style="padding:12px 20px;background:#fff;gap:10px;align-items:center">
+      <button class="bc-btn primary"><svg class="icon"><use href="#i-plus"/></svg>新建任务</button>
+      <button class="bc-btn gray"><svg class="icon"><use href="#i-lock"/></svg>批量锁定</button>
+      <button class="bc-btn gray">批量导出</button>
+      <button class="bc-btn gray">批量暂停</button>
+      <div class="bc-dropdown" data-dropdown style="margin-left:10px">
+        <button class="bc-btn gray">更多操作<svg class="icon" style="margin-left:2px"><use href="#i-down"/></svg></button>
+        <div class="menu">
+          <div class="menu-item">立即执行</div>
+          <div class="menu-item">复制配置</div>
+          <div class="menu-div"></div>
+          <div class="menu-item danger">批量删除</div>
+        </div>
+      </div>
+      <div class="ml-auto row gap8">
+        <a href="#">查询执行记录</a>
+        <span class="bc-divider vertical"></span>
+        <a href="#">一键复制所选ID</a>
+      </div>
+    </div>
+
+    <!-- §12.1 ⑤ 数据表格区 (§5.10 Table) -->
+    <div class="bc-table-wrap" style="background:#fff">
+      <table class="bc-table">
+        <thead>
+          <tr>
+            <th style="width:40px"><label class="bc-checkbox" data-checkall><span class="box"><svg class="icon"><use href="#i-check"/></svg></span></label></th>
+            <th style="width:60px">序号</th>
+            <th><span class="th-sort asc">任务名称<span class="sort-ic"><span class="up">▲</span><span class="down">▼</span></span></span></th>
+            <th>任务类型</th>
+            <th>执行状态</th>
+            <th>优先级</th>
+            <th>进度</th>
+            <th>负责人</th>
+            <th>创建时间</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- 行1: 处理中 + 进度条 -->
+          <tr class="selected">
+            <td><label class="bc-checkbox checked"><input type="checkbox" checked/><span class="box"><svg class="icon"><use href="#i-check"/></svg></span></label></td>
+            <td>1</td>
+            <td><div class="goods-card"><div class="gc-title">商品上架自动校验</div><div class="gc-desc">TASK-2026-0731-001</div></div></td>
+            <td><span class="bc-tag info"><span class="dot"></span>定时任务</span></td>
+            <td><span class="bc-tag warn">处理中</span></td>
+            <td><span class="bc-tag danger">高优</span></td>
+            <td style="min-width:140px">
+              <div class="bc-progress"><div class="track"><div class="fill" style="width:68%"></div></div><span class="pct">68%</span></div>
+            </td>
+            <td>张明</td>
+            <td class="text_gray">2026-07-31 09:20</td>
+            <td>
+              <div class="row gap4">
+                <button class="bc-btn textPrimary sm">详情</button>
+                <button class="bc-btn textPrimary sm">暂停</button>
+              </div>
+            </td>
+          </tr>
+          <!-- 行2: 已完成 -->
+          <tr>
+            <td><label class="bc-checkbox"><input type="checkbox"/><span class="box"><svg class="icon"><use href="#i-check"/></svg></span></label></td>
+            <td>2</td>
+            <td><div class="goods-card"><div class="gc-title">库存同步全量刷新</div><div class="gc-desc">TASK-2026-0731-002</div></div></td>
+            <td><span class="bc-tag info"><span class="dot"></span>周期任务</span></td>
+            <td><span class="bc-tag success">已完成</span></td>
+            <td><span class="bc-tag gray">普通</span></td>
+            <td><div class="bc-progress"><div class="track"><div class="fill" style="width:100%"></div></div><span class="pct">100%</span></div></td>
+            <td>李华</td>
+            <td class="text_gray">2026-07-31 08:15</td>
+            <td><div class="row gap4"><button class="bc-btn textPrimary sm">详情</button><button class="bc-btn textPrimary sm">重新执行</button></div></td>
+          </tr>
+          <!-- 行3: 失败 + Progress异常态 -->
+          <tr>
+            <td><label class="bc-checkbox"><input type="checkbox"/><span class="box"><svg class="icon"><use href="#i-check"/></svg></span></label></td>
+            <td>3</td>
+            <td><div class="goods-card"><div class="gc-title">价格批量更新推送</div><div class="gc-desc">TASK-2026-0731-003</div></div></td>
+            <td><span class="bc-tag info"><span class="dot"></span>即时任务</span></td>
+            <td><span class="bc-tag danger">失败</span></td>
+            <td><span class="bc-tag danger">高优</span></td>
+            <td><div class="bc-progress exception"><div class="track"><div class="fill" style="width:42%"></div></div><span class="pct">42%</span></div></td>
+            <td>王芳</td>
+            <td class="text_gray">2026-07-31 07:40</td>
+            <td><div class="row gap4"><button class="bc-btn textPrimary sm">详情</button><button class="bc-btn textPrimary sm">重试</button></div></td>
+          </tr>
+          <!-- 行4: 待处理 + Badge -->
+          <tr>
+            <td><label class="bc-checkbox"><input type="checkbox"/><span class="box"><svg class="icon"><use href="#i-check"/></svg></span></label></td>
+            <td>4</td>
+            <td><div class="goods-card"><div class="gc-title">订单超时自动取消</div><div class="gc-desc">TASK-2026-0731-004</div></div></td>
+            <td><span class="bc-tag info"><span class="dot"></span>事件触发</span></td>
+            <td><span class="bc-tag warn"><span class="dot"></span>待处理</span></td>
+            <td><span class="bc-tag gray">低优</span></td>
+            <td><div class="bc-progress"><div class="track"><div class="fill" style="width:0%"></div></div><span class="pct">0%</span></div></td>
+            <td>赵强</td>
+            <td class="text_gray">2026-07-31 06:30</td>
+            <td><div class="row gap4"><button class="bc-btn textPrimary sm">详情</button><span class="bc-badge">2</span></div></td>
+          </tr>
+          <!-- 行5: 待审核 + Tooltip -->
+          <tr>
+            <td><label class="bc-checkbox"><input type="checkbox"/><span class="box"><svg class="icon"><use href="#i-check"/></svg></span></label></td>
+            <td>5</td>
+            <td><div class="goods-card"><div class="gc-title">退款审核自动分单</div><div class="gc-desc">TASK-2026-0731-005</div></div></td>
+            <td><span class="bc-tag info"><span class="dot"></span>定时任务</span></td>
+            <td><span class="bc-tag warn">待审核</span></td>
+            <td><span class="bc-tag gray">普通</span></td>
+            <td><div class="bc-progress"><div class="track"><div class="fill" style="width:100%"></div></div><span class="pct">100%</span></div></td>
+            <td>孙丽</td>
+            <td class="text_gray">2026-07-30 22:10</td>
+            <td><div class="row gap4"><button class="bc-btn textPrimary sm">详情</button><div class="bc-tooltip"><button class="bc-btn textPrimary sm">审核</button><span class="tip">需上级主管确认</span></div></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- §5.17 Pagination (线型V形箭头 + « » 跳页) -->
+    <div class="bc-pagination">
+      <span class="total">共 2050 条</span>
+      <span class="pg-size">
+        <span class="bc-select" data-select>
+          <span class="bc-select-trigger" style="height:28px;min-width:96px"><span class="val">10 条/页</span><span class="arrow"><svg class="icon"><use href="#i-down"/></svg></span></span>
+          <div class="bc-select-panel"><div class="bc-option selected">10 条/页</div><div class="bc-option">20 条/页</div><div class="bc-option">50 条/页</div><div class="bc-option">100 条/页</div></div>
+        </span>
+      </span>
+      <span class="pg-item pg-jump">«</span>
+      <span class="pg-item disabled"><svg class="icon"><use href="#i-left"/></svg></span>
+      <span class="pg-item active">1</span>
+      <span class="pg-item">2</span>
+      <span class="pg-item">3</span>
+      <span class="pg-item">4</span>
+      <span class="pg-item">5</span>
+      <span class="pg-item"><svg class="icon"><use href="#i-right"/></svg></span>
+      <span class="pg-item pg-jump">»</span>
+      <span style="font-size:12px;color:var(--bc-secondaryTextColor)">前往 <input class="bc-input" style="height:28px;width:48px;min-width:48px;text-align:center;padding:0" value="1"/> 页</span>
+    </div>
+
+    <!-- §9.10 底部固定操作栏 -->
+    <div class="footer-block">
+      <div class="row gap8">
+        <span class="text_regular">已选择 <span class="text_bold" style="color:var(--bc-themeColor)">1</span> 项</span>
+        <span class="bc-divider vertical"></span>
+        <span class="text_gray">共 2050 条记录</span>
+        <div class="ml-auto row gap8">
+          <button class="bc-btn gray">取消选择</button>
+          <button class="bc-btn primary">批量执行</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ====== §5.11 Modal 弹窗 (含 §5.3 Form / Radio / Switch / Select / TextArea) ====== -->
+<div class="bc-modal-mask" id="modal-new">
+  <div class="bc-modal" style="width:520px">
+    <div class="bc-modal-head">
+      <span>新建任务</span>
+      <span class="close" data-close-modal><svg class="icon"><use href="#i-close"/></svg></span>
+    </div>
+    <div class="bc-modal-body">
+      <div class="bc-form" style="flex-direction:column;gap:16px">
+        <!-- Input required + error -->
+        <div class="bc-form-item">
+          <div class="label"><span class="req">*</span>任务名称</div>
+          <div class="ctrl" style="flex:1">
+            <div class="bc-input w-full"><input placeholder="请输入任务名称" /></div>
+            <div class="err-text">任务名称不能为空</div>
+          </div>
+        </div>
+        <!-- Select -->
+        <div class="bc-form-item">
+          <div class="label"><span class="req">*</span>任务类型</div>
+          <div class="ctrl" style="flex:1">
+            <div class="bc-select w-full" data-select>
+              <div class="bc-select-trigger w-full"><span class="val placeholder">请选择任务类型</span><span class="arrow"><svg class="icon"><use href="#i-down"/></svg></span></div>
+              <div class="bc-select-panel">
+                <div class="bc-option">定时任务</div><div class="bc-option">即时任务</div>
+                <div class="bc-option">周期任务</div><div class="bc-option">事件触发</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Radio group -->
+        <div class="bc-form-item">
+          <div class="label">优先级</div>
+          <div class="ctrl row gap16" style="flex:1;line-height:28px">
+            <label class="bc-radio checked"><input type="radio" name="pri" checked/><span class="box"><span class="dot"></span></span>高优</label>
+            <label class="bc-radio"><input type="radio" name="pri"/><span class="box"><span class="dot"></span></span>普通</label>
+            <label class="bc-radio"><input type="radio" name="pri"/><span class="box"><span class="dot"></span></span>低优</label>
+          </div>
+        </div>
+        <!-- Switch -->
+        <div class="bc-form-item">
+          <div class="label">启用通知</div>
+          <div class="ctrl row gap8" style="flex:1;line-height:28px">
+            <div class="bc-switch on" data-switch><div class="track"><div class="thumb"></div></div></div>
+            <span class="text_gray">任务完成后自动推送通知</span>
+          </div>
+        </div>
+        <!-- TextArea -->
+        <div class="bc-form-item">
+          <div class="label">任务描述</div>
+          <div class="ctrl" style="flex:1">
+            <textarea class="bc-textarea" rows="3" placeholder="请输入任务描述（选填）"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bc-modal-foot">
+      <button class="bc-btn gray" data-close-modal>取消</button>
+      <button class="bc-btn primary" data-toast="success" data-toast-msg="任务创建成功" data-close-modal>确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== §5.12 Toast 容器 ====== -->
+<div class="bc-toast-wrap" id="toast-wrap"></div>
+
+<!-- ====== §5.8 BackTop ====== -->
+<div class="bc-backtop" id="backtop" style="display:none"><svg class="icon"><use href="#i-up"/></svg></div>
+
+<!-- ====== §5.20 / §9.5 全宽抽屉 Drawer (含 §5.18 Step / §9.2 StatusBlock / §9.6 商品卡 / §9.7 模特卡 / §9.8 预览面板 / §9.9 SKU画布 / §5.20 Collapse) ====== -->
+<div class="bc-drawer-mask" id="drawer-mask"></div>
+<div class="bc-drawer" id="drawer-detail">
+  <div class="bc-drawer-head">
+    <span>任务详情 - 商品上架自动校验</span>
+    <span class="close" data-close-drawer><svg class="icon"><use href="#i-close"/></svg></span>
+  </div>
+  <div class="bc-drawer-body">
+    <!-- §5.18 Step 水平步骤条 -->
+    <div class="bc-steps mb16">
+      <div class="bc-step done"><span class="s-num">✓</span><div class="s-info"><div class="s-title">创建任务</div></div><span class="s-line"></span></div>
+      <div class="bc-step done"><span class="s-num">✓</span><div class="s-info"><div class="s-title">参数配置</div></div><span class="s-line"></span></div>
+      <div class="bc-step"><span class="s-num">3</span><div class="s-info"><div class="s-title">执行中</div><div class="s-desc">当前进度 68%</div></div><span class="s-line"></span></div>
+      <div class="bc-step wait"><span class="s-num">4</span><div class="s-info"><div class="s-title">完成审核</div></div></div>
+    </div>
+    <hr class="bc-divider"/>
+
+    <!-- §9.2 信息提示块 (待确认/已确认) -->
+    <div class="row gap16 mb16">
+      <div class="status-block needConfirm flex1">
+        <div class="sb-content"><div class="sb-strong">待确认：任务参数变更</div><div>该任务的关键参数已被修改，需主管确认后方可继续执行。</div></div>
+        <svg class="icon sb-icon"><use href="#i-warn"/></svg>
+      </div>
+      <div class="status-block alreadyConfirm flex1">
+        <div class="sb-content"><div class="sb-strong">已确认：安全校验通过</div><div>商品信息合规性校验已完成，无风险项。</div></div>
+        <svg class="icon sb-icon"><use href="#i-success"/></svg>
+      </div>
+    </div>
+
+    <!-- §5.20 Collapse 折叠面板 -->
+    <div class="mb16" style="background:#fafafa;border-radius:var(--bc-radius)">
+      <div class="bc-menu-item" data-collapse style="justify-content:space-between;font-weight:600;color:var(--bc-primaryTextColor);height:44px">
+        <span>基本信息</span><svg class="icon" style="transition:transform .2s"><use href="#i-down"/></svg>
+      </div>
+      <div class="collapse-body" style="padding:0 16px 12px">
+        <div class="bc-row" style="gap:24px">
+          <div class="bc-col" style="flex:1;gap:8px">
+            <div class="row"><span class="text_gray" style="width:110px">任务编号</span><span>TASK-2026-0731-001</span></div>
+            <div class="row"><span class="text_gray" style="width:110px">任务类型</span><span class="bc-tag info"><span class="dot"></span>定时任务</span></div>
+            <div class="row"><span class="text_gray" style="width:110px">执行状态</span><span class="bc-tag warn">处理中</span></div>
+          </div>
+          <div class="bc-col" style="flex:1;gap:8px">
+            <div class="row"><span class="text_gray" style="width:110px">负责人</span><span>张明</span></div>
+            <div class="row"><span class="text_gray" style="width:110px">创建时间</span><span>2026-07-31 09:20</span></div>
+            <div class="row"><span class="text_gray" style="width:110px">执行进度</span>
+              <div class="bc-progress" style="width:180px"><div class="track"><div class="fill" style="width:68%"></div></div><span class="pct">68%</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- §9.6 商品卡 + §9.7 模特卡 -->
+    <div class="row gap16 mb16" style="align-items:flex-start">
+      <div class="bc-card flex1">
+        <div class="bc-card-head"><span class="text_bold">关联商品</span><span class="bc-tag success">已校验</span></div>
+        <div class="bc-card-body">
+          <div class="goods-card">
+            <div class="gc-title">无线蓝牙耳机 Pro Max</div>
+            <div class="gc-desc">SPU: 1002547896 · SKU: 32项</div>
+            <div class="gc-extra"><span class="text_gray">最近同步：</span>2026-07-31 09:18 · <a href="#">查看详情</a></div>
+          </div>
+        </div>
+      </div>
+      <div class="model-card flex1">
+        <div style="width:60px;height:60px;background:#f5f5f5;border-radius:var(--bc-radius);flex:none;display:flex;align-items:center;justify-content:center;color:var(--bc-icon-color)"><svg class="icon" style="font-size:24px"><use href="#i-cal"/></svg></div>
+        <div style="flex:1;margin-left:12px">
+          <div class="mc-name">款式 A - 黑色</div>
+          <div class="mc-row"><div class="mc-label">款式编号</div><div class="mc-val">MDL-A001</div></div>
+          <div class="mc-row"><div class="mc-label">库存数量</div><div class="mc-val">2,580</div></div>
+          <div class="mc-row"><div class="mc-label">上架状态</div><div class="mc-val"><span class="bc-tag success">在售</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- §9.8 图片预览面板 + §9.9 SKU画布 -->
+    <div class="row gap16 mb16" style="align-items:flex-start">
+      <div class="preview-panel">
+        <div class="pp-head"><span>商品图片预览</span><span class="ml-auto text_gray">3/12</span></div>
+        <div class="row" style="align-items:stretch">
+          <div class="pp-view flex1"><div class="pp-img"><svg class="icon" style="font-size:40px"><use href="#i-export"/></svg></div></div>
+          <div class="pp-tools"><span class="pp-tool">+</span><span class="pp-tool">⟲</span><span class="pp-tool disabled">×</span></div>
+        </div>
+      </div>
+      <div class="sku-canvas">
+        <div class="sc-top">
+          <div class="sc-title">规格图</div>
+          <div class="sc-item">颜色：黑色</div>
+          <div class="sc-item">尺寸：标准</div>
+        </div>
+        <div class="sc-bottom">
+          <div class="sc-pic">图片<span class="sc-no">01</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- §5.18 垂直步骤条 (执行记录时间线) -->
+    <div class="text_bold mb12">执行记录</div>
+    <div class="bc-steps vertical">
+      <div class="bc-step done"><span class="s-num">✓</span><div class="s-info"><div class="s-title">任务创建成功</div><div class="s-desc">2026-07-31 09:20 · 张明</div></div><span class="s-line"></span></div>
+      <div class="bc-step done"><span class="s-num">✓</span><div class="s-info"><div class="s-title">参数校验通过</div><div class="s-desc">2026-07-31 09:22 · 系统</div></div><span class="s-line"></span></div>
+      <div class="bc-step"><span class="s-num">3</span><div class="s-info"><div class="s-title">正在执行商品校验</div><div class="s-desc">已处理 680/1000 · 2026-07-31 09:25</div></div><span class="s-line"></span></div>
+      <div class="bc-step wait"><span class="s-num">4</span><div class="s-info"><div class="s-title">等待审核</div></div></div>
+    </div>
+  </div>
+  <div class="bc-drawer-foot">
+    <button class="bc-btn gray" data-close-drawer>关闭</button>
+    <button class="bc-btn secondaryDanger" data-toast="warn" data-toast-msg="任务已暂停">暂停任务</button>
+    <button class="bc-btn primary" data-toast="success" data-toast-msg="操作成功">保存</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+ * Beast Core 组件交互 (遵循 §5 各组件规范)
+ * ============================================================ */
+(function(){
+  'use strict';
+
+  /* §5.4 Select 下拉选择器 (非原生，线型V形箭头展开旋转180°) */
+  document.querySelectorAll('[data-select]').forEach(function(sel){
+    var trigger = sel.querySelector('.bc-select-trigger');
+    trigger.addEventListener('click', function(e){
+      e.stopPropagation();
+      var isOpen = sel.classList.contains('open');
+      closeAllDropdowns();
+      if(!isOpen) sel.classList.add('open');
+    });
+    sel.querySelectorAll('.bc-option').forEach(function(opt){
+      opt.addEventListener('click', function(e){
+        e.stopPropagation();
+        sel.querySelectorAll('.bc-option').forEach(function(o){o.classList.remove('selected');});
+        opt.classList.add('selected');
+        var val = sel.querySelector('.bc-select-trigger .val');
+        val.textContent = opt.textContent.replace(/\s*$/,'').trim();
+        val.classList.remove('placeholder');
+        sel.classList.remove('open');
+      });
+    });
+  });
+
+  /* §5.19 Dropdown 下拉菜单 */
+  document.querySelectorAll('[data-dropdown]').forEach(function(dd){
+    var btn = dd.querySelector('button');
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      closeAllDropdowns();
+      dd.classList.toggle('open');
+    });
+  });
+
+  /* §5.23 RangePicker (非原生) */
+  document.querySelectorAll('[data-rangepicker]').forEach(function(rp){
+    rp.addEventListener('click', function(e){
+      e.stopPropagation();
+      closeAllDropdowns();
+      rp.classList.toggle('open');
+    });
+  });
+
+  function closeAllDropdowns(){
+    document.querySelectorAll('.bc-select.open').forEach(function(s){s.classList.remove('open');});
+    document.querySelectorAll('.bc-dropdown.open').forEach(function(d){d.classList.remove('open');});
+    document.querySelectorAll('.bc-rangepicker.open').forEach(function(r){r.classList.remove('open');});
+  }
+  document.addEventListener('click', closeAllDropdowns);
+
+  /* §5.5 Checkbox 复选框 (非原生，全选/半选联动) */
+  document.querySelectorAll('.bc-checkbox').forEach(function(cb){
+    if(cb.hasAttribute('data-checkall')) return;
+    cb.addEventListener('click', function(e){
+      if(e.target.tagName === 'INPUT') return;
+      e.preventDefault();
+      if(cb.classList.contains('disabled')) return;
+      cb.classList.toggle('checked');
+      var inp = cb.querySelector('input'); if(inp) inp.checked = cb.classList.contains('checked');
+      updateCheckAll();
+    });
+  });
+
+  function updateCheckAll(){
+    var rows = document.querySelectorAll('.bc-table tbody .bc-checkbox');
+    var checkAll = document.querySelector('[data-checkall]');
+    if(!checkAll || !rows.length) return;
+    var checked = 0;
+    rows.forEach(function(r){ if(r.classList.contains('checked')) checked++; });
+    checkAll.classList.remove('checked','indeterminate');
+    if(checked === rows.length){ checkAll.classList.add('checked'); }
+    else if(checked > 0){ checkAll.classList.add('indeterminate'); }
+  }
+  document.querySelector('[data-checkall]').addEventListener('click', function(e){
+    e.preventDefault();
+    var rows = document.querySelectorAll('.bc-table tbody .bc-checkbox');
+    var allChecked = this.classList.contains('checked');
+    this.classList.remove('indeterminate');
+    this.classList.toggle('checked');
+    var nowChecked = this.classList.contains('checked');
+    rows.forEach(function(r){
+      r.classList.toggle('checked', nowChecked);
+      var inp = r.querySelector('input'); if(inp) inp.checked = nowChecked;
+    });
+  });
+
+  /* §5.5 Radio 单选 (非原生) */
+  document.querySelectorAll('.bc-radio').forEach(function(rd){
+    rd.addEventListener('click', function(e){
+      if(e.target.tagName === 'INPUT') return;
+      e.preventDefault();
+      var name = rd.querySelector('input') && rd.querySelector('input').name;
+      if(name){
+        document.querySelectorAll('input[name="'+name+'"]').forEach(function(i){
+          i.parentElement.classList.remove('checked');
+        });
+      }
+      rd.classList.add('checked');
+      var inp = rd.querySelector('input'); if(inp) inp.checked = true;
+    });
+  });
+
+  /* §5.6 Switch 开关 */
+  document.querySelectorAll('[data-switch]').forEach(function(sw){
+    sw.addEventListener('click', function(){
+      if(sw.classList.contains('disabled')) return;
+      sw.classList.toggle('on');
+    });
+  });
+
+  /* §5.20 Collapse 折叠面板 */
+  document.querySelectorAll('[data-collapse]').forEach(function(hd){
+    hd.addEventListener('click', function(){
+      var body = hd.nextElementSibling;
+      var ic = hd.querySelector('svg');
+      if(body.style.display === 'none'){
+        body.style.display = '';
+        ic.style.transform = 'rotate(0deg)';
+      } else {
+        body.style.display = 'none';
+        ic.style.transform = 'rotate(-90deg)';
+      }
+    });
+  });
+
+  /* §5.11 Modal / §5.20 Drawer 弹层控制 */
+  var modal = document.getElementById('modal-new');
+  var drawerMask = document.getElementById('drawer-mask');
+  var drawer = document.getElementById('drawer-detail');
+  /* 新建任务按钮 */
+  document.querySelectorAll('.bc-btn.primary').forEach(function(b){
+    if(b.textContent.indexOf('新建任务') > -1){
+      b.addEventListener('click', function(){ modal.classList.add('show'); });
+    }
+  });
+  /* 详情按钮打开抽屉 */
+  document.querySelectorAll('.bc-table .bc-btn.textPrimary').forEach(function(b){
+    if(b.textContent.trim() === '详情'){
+      b.addEventListener('click', function(){ drawerMask.classList.add('show'); drawer.classList.add('show'); });
+    }
+  });
+  function closeModal(){ modal.classList.remove('show'); }
+  function closeDrawer(){ drawerMask.classList.remove('show'); drawer.classList.remove('show'); }
+  document.querySelectorAll('[data-close-modal]').forEach(function(b){ b.addEventListener('click', closeModal); });
+  document.querySelectorAll('[data-close-drawer]').forEach(function(b){ b.addEventListener('click', closeDrawer); });
+  modal.addEventListener('click', function(e){ if(e.target === modal) closeModal(); });
+  drawerMask.addEventListener('click', closeDrawer);
+  /* ESC 关闭 */
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){ closeModal(); closeDrawer(); }
+  });
+
+  /* §5.12 Toast 消息提示 (距顶56px，3px圆角，自动消失) */
+  var toastWrap = document.getElementById('toast-wrap');
+  var iconMap = {success:'i-success', warn:'i-warn', error:'i-error'};
+  function showToast(type, msg){
+    var t = document.createElement('div');
+    t.className = 'bc-toast ' + type;
+    t.innerHTML = '<svg class="icon t-icon"><use href="#'+iconMap[type]+'"/></svg><span>'+msg+'</span>';
+    toastWrap.appendChild(t);
+    setTimeout(function(){
+      t.classList.add('out');
+      setTimeout(function(){ t.remove(); }, 300);
+    }, 2500);
+  }
+  document.querySelectorAll('[data-toast]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var type = b.getAttribute('data-toast');
+      var msg = b.getAttribute('data-toast-msg') || '操作成功';
+      showToast(type, msg);
+    });
+  });
+  /* 顶部刷新按钮 -> warn toast 示例 */
+  document.querySelectorAll('.topbar .bc-btn.gray').forEach(function(b){
+    if(b.textContent.indexOf('刷新') > -1){
+      b.addEventListener('click', function(){ showToast('success', '数据已刷新'); });
+    }
+  });
+
+  /* §5.8 BackTop 回到顶部 */
+  var backtop = document.getElementById('backtop');
+  window.addEventListener('scroll', function(){
+    backtop.style.display = window.scrollY > 200 ? 'flex' : 'none';
+  });
+  backtop.addEventListener('click', function(){ window.scrollTo({top:0, behavior:'smooth'}); });
+
+  /* §5.10 Table 排序切换 */
+  document.querySelectorAll('.bc-table .th-sort').forEach(function(th){
+    th.addEventListener('click', function(){
+      if(th.classList.contains('asc')){ th.classList.remove('asc'); th.classList.add('desc'); }
+      else if(th.classList.contains('desc')){ th.classList.remove('desc'); }
+      else { th.classList.add('asc'); }
+    });
+  });
+
+  /* §5.16 Tab / §9.4 状态标签页 切换 */
+  function bindTabSwitch(selector){
+    document.querySelectorAll(selector).forEach(function(group){
+      group.querySelectorAll('.bc-tab, .status-tab').forEach(function(tab){
+        tab.addEventListener('click', function(){
+          group.querySelectorAll('.bc-tab, .status-tab').forEach(function(t){t.classList.remove('active');});
+          tab.classList.add('active');
+        });
+      });
+    });
+  }
+  bindTabSwitch('.bc-tabs');
+  document.querySelectorAll('.status-tabs').forEach(function(g){
+    g.querySelectorAll('.status-tab').forEach(function(t){
+      t.addEventListener('click', function(){
+        g.querySelectorAll('.status-tab').forEach(function(x){x.classList.remove('active');});
+        t.classList.add('active');
+      });
+    });
+  });
+
+  /* 初始化全选状态 */
+  updateCheckAll();
+})();
+</script>
+</body>
+</html>
