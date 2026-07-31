@@ -1,0 +1,2504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>任务管理列表 · Beast Core / OMS 设计规范验证（单文件版）</title>
+<style>
+/* ==========================================================================
+   Beast Core / OMS 设计规范 —— Design Token
+   数据来源：《Beast-Core-设计规范-精简版-02.md》附录 A/B/C
+   本文件为唯一 Token 权威源，所有组件样式均引用此处变量，不硬编码色值。
+   ========================================================================== */
+:root {
+  /* 主题色板 §2.1 */
+  --bc-themeColor: #0071f3;
+  --bc-themeColor1: #e6f6ff;
+  --bc-themeColor2: #a3daff;
+  --bc-themeColor3: #7ac6ff;
+  --bc-themeColor4: #52aeff;
+  --bc-themeColor5: #2994ff;
+  --bc-themeColor6: #0071f3;
+  --bc-themeColor7: #0058cc;
+  --bc-themeColor8: #0042a6;
+  --bc-themeColor9: #002f80;
+  --bc-themeColor10: #001e59;
+
+  /* 语义色 §2.2 */
+  --bc-dangerColor: #f71010;
+  --bc-dangerColor-hover: #d10209;
+  --bc-dangerColor-active: #ab000b;
+  --bc-successColor: #00bb12;
+  --bc-warnColor: #fb7701;
+  --bc-linkColor: #0071f3;
+  --bc-linkColor-hover: #0058cc;
+  --bc-linkColor-active: #0042a6;
+  --bc-hoverBorderColor: #0058cc;
+
+  /* 背景与边框 §2.4 */
+  --bc-bgColor: #fff;
+  --bc-disabledBgColor: #f5f5f5;
+  --bc-borderColor: #dbdbdb;
+  --bc-divideColor: #ebebeb;
+  --bc-trackColor: #f0f0f0;
+  --bc-boxShadowColor: #eef7ff;
+  --bc-canvasBgColor: #f0f2f5; /* §12.1 主画布背景 */
+
+  /* 文字色（黑色透明度梯度）§2.3 */
+  --bc-primaryTextColor: rgba(0, 0, 0, 0.8);
+  --bc-secondaryTextColor: rgba(0, 0, 0, 0.6);
+  --bc-thirdlyTextColor: rgba(0, 0, 0, 0.4);
+  --bc-hintTextColor: rgba(0, 0, 0, 0.32);
+  --bc-disabledTextColor: rgba(0, 0, 0, 0.24);
+  --bc-placeholderColor: rgba(0, 0, 0, 0.32);
+
+  /* 图标色 §2.6 / §2.8 */
+  --bc-icon-color: rgba(0, 0, 0, 0.4);
+  --bc-icon-hoverColor: rgba(0, 0, 0, 0.8);
+  --bc-arrowIconColor: rgba(0, 0, 0, 0.4);
+  --bc-arrowColor: rgba(0, 0, 0, 0.6);
+
+  /* 状态提示三件套 §2.9（唯一权威源） */
+  --bc-status-success-color: #00bb12;
+  --bc-status-success-bg: #e3fae1;
+  --bc-status-success-border: #9bed98;
+  --bc-status-warn-color: #fb7701;
+  --bc-status-warn-bg: #fff6e6;
+  --bc-status-warn-border: #ffdaa3;
+  --bc-status-error-color: #f71010;
+  --bc-status-error-bg: #ffeae6;
+  --bc-status-error-border: #ffbdb3;
+  --bc-status-info-color: #0071f3;
+  --bc-status-info-bg: #e6f6ff;
+  --bc-status-info-border: #a3daff;
+
+  /* Tag 专属配色 §5.7 */
+  --bc-tag-info-color: #0071f3;   --bc-tag-info-bg: #e6f6ff;   --bc-tag-info-border: #52aeff;
+  --bc-tag-warn-color: #ff7300;   --bc-tag-warn-bg: #fff5e6;   --bc-tag-warn-border: #ffc37a;
+  --bc-tag-danger-color: #f71010; --bc-tag-danger-bg: #fff2f0; --bc-tag-danger-border: #ffaca6;
+  --bc-tag-success-color: #00bb12;--bc-tag-success-bg: #e3fae1;--bc-tag-success-border: #9bed98;
+  --bc-tag-fail-color: rgba(0,0,0,.4); --bc-tag-fail-bg: #ebebeb; --bc-tag-fail-border: rgba(0,0,0,.12);
+  --bc-tag-gray-color: rgba(0,0,0,.6); --bc-tag-gray-bg: rgba(0,0,0,.04);
+
+  /* 尺寸三档 §4.1 */
+  --bc-height-small: 24px;
+  --bc-height-medium: 28px;
+  --bc-height-large: 40px;
+  --bc-fontSize-small: 12px;
+  --bc-fontSize-medium: 12px;
+  --bc-fontSize-medium-control: 14px;
+  --bc-fontSize-large: 16px;
+
+  /* 圆角 §4.2 */
+  --bc-borderRadius: 6px;
+  --bc-borderRadius-toast: 3px;
+  --bc-borderRadius-noticeBar: 3px;
+  --bc-borderRadius-card: 0px;
+  --bc-borderRadius-badge: 6px;
+  --bc-borderRadius-badge-large: 8px;
+
+  /* 间距栅格 §4.3 */
+  --bc-space-4: 4px;  --bc-space-8: 8px;  --bc-space-12: 12px;
+  --bc-space-16: 16px; --bc-space-20: 20px; --bc-space-24: 24px;
+
+  /* 阴影 §4.4 */
+  --bc-boxShadow-popup: 0 2px 8px 0 rgba(0,0,0,.15);
+  --bc-boxShadow-tooltip: 0 2px 8px 0 rgba(0,0,0,.4);
+  --bc-boxShadow-toast-success: 0px 2px 8px 0px rgba(0,33,8,.12);
+  --bc-boxShadow-toast-warn: 0px 2px 8px 0px rgba(97,66,0,.12);
+  --bc-boxShadow-toast-error: 0px 2px 8px 0px rgba(94,0,13,.12);
+
+  /* 动效 §8 */
+  --bc-easeInOutCirc: cubic-bezier(0.78, 0.14, 0.15, 0.86);
+
+  /* z-index §6 */
+  --bc-z-tableFixed: 100;
+  --bc-z-selectDropdown: 101;
+  --bc-z-spin: 999;
+  --bc-z-modal: 1000;
+  --bc-z-modalMask: 1000;
+  --bc-z-toast: 1010;
+  --bc-z-popover: 1030;
+  --bc-z-dropdown: 1050;
+  --bc-z-tooltip: 1060;
+
+  /* 字体 §9.1 */
+  --bc-font-family: 'PingFang SC', 'Heiti SC', 'Microsoft Yahei', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* ==========================================================================
+   全局重置
+   ========================================================================== */
+* , *::before, *::after { box-sizing: border-box; }
+html, body, #app { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--bc-font-family);
+  font-size: var(--bc-fontSize-medium);
+  color: var(--bc-primaryTextColor);
+  background: var(--bc-bgColor);
+  -webkit-font-smoothing: antialiased;
+}
+ul, ol { margin: 0; padding: 0; list-style: none; }
+button { font-family: inherit; }
+a { color: var(--bc-linkColor); text-decoration: none; cursor: pointer; }
+a:hover { color: var(--bc-linkColor-hover); }
+a:active { color: var(--bc-linkColor-active); }
+svg { display: block; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #d5d5d5; border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+@keyframes bc-spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+.bc-icon-spin { animation: bc-spin .8s linear infinite; }
+@keyframes bc-fade-in { from { opacity: 0;} to { opacity: 1;} }
+@keyframes bc-error-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+/* ==========================================================================
+   App Shell —— Header / Sider / Breadcrumb §5.19
+   ========================================================================== */
+.app-shell { height: 100vh; display: flex; flex-direction: column; }
+
+.app-header {
+  height: 56px; flex-shrink: 0; background: #001529;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; color: #fff; z-index: var(--bc-z-dropdown);
+}
+.app-header__left { display: flex; align-items: center; gap: 16px; }
+.app-header__collapse {
+  border: none; background: transparent; color: rgba(255,255,255,.85); cursor: pointer;
+  display: inline-flex; padding: 6px; border-radius: 4px;
+}
+.app-header__collapse:hover { background: rgba(255,255,255,.08); }
+.app-header__logo { font-size: 16px; font-weight: 700; color: var(--bc-themeColor2); letter-spacing: .5px; }
+.app-header__title { font-size: 14px; color: rgba(255,255,255,.65); border-left: 1px solid rgba(255,255,255,.2); padding-left: 16px; }
+.app-header__right { display: flex; align-items: center; gap: 24px; }
+.app-header__bell { position: relative; display: inline-flex; color: rgba(255,255,255,.85); cursor: pointer; }
+.app-header__user { display: flex; align-items: center; gap: 8px; cursor: pointer; position: relative; }
+.app-header__avatar {
+  width: 28px; height: 28px; border-radius: 50%; background: var(--bc-themeColor); color: #fff;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;
+}
+.app-header__username { font-size: 13px; color: rgba(255,255,255,.85); }
+
+.app-body { flex: 1 1 auto; display: flex; min-height: 0; }
+.app-sider { width: 200px; flex-shrink: 0; background: #001529; padding-top: 8px; transition: width .2s var(--bc-easeInOutCirc); overflow: hidden; }
+.app-sider--collapsed { width: 64px; }
+.app-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; background: #fff; }
+.app-main__breadcrumb { flex-shrink: 0; padding: 12px 24px; border-bottom: 1px solid var(--bc-divideColor); }
+.app-main__content { flex: 1 1 auto; overflow-y: auto; background: var(--bc-canvasBgColor); }
+
+/* Menu §5.19 */
+.bc-menu { width: 100%; }
+.bc-menu__item {
+  position: relative; height: 40px; line-height: 40px; display: flex; align-items: center; gap: 8px;
+  padding: 0 16px; cursor: pointer; color: rgba(255,255,255,.75); font-size: 14px;
+  transition: background-color .2s var(--bc-easeInOutCirc);
+}
+.bc-menu__item:hover { color: #fff; background: rgba(255,255,255,.06); }
+.bc-menu__item.active { color: #fff; background: rgba(255,255,255,.1); }
+.bc-menu__item.active .bc-menu__indicator { display: block; }
+.bc-menu__indicator { display: none; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--bc-themeColor); }
+.bc-menu__label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app-sider--collapsed .bc-menu__label { display: none; }
+
+/* Breadcrumb §5.19 */
+.bc-breadcrumb { display: flex; align-items: center; font-size: 12px; }
+.bc-breadcrumb__sep { margin: 0 8px; color: var(--bc-divideColor); }
+.bc-breadcrumb__item { color: var(--bc-secondaryTextColor); cursor: pointer; }
+.bc-breadcrumb__item:hover { color: var(--bc-themeColor6); }
+.bc-breadcrumb__current { color: var(--bc-primaryTextColor); }
+
+/* Dropdown §5.19 */
+.bc-dropdown-wrap { position: relative; display: inline-flex; }
+.bc-dropdown-menu {
+  position: absolute; min-width: 140px; background: #fff; border-radius: var(--bc-borderRadius);
+  box-shadow: var(--bc-boxShadow-popup); z-index: var(--bc-z-dropdown); padding: 4px 0; margin: 0;
+  top: calc(100% + 4px); display: none;
+}
+.bc-dropdown-menu.open { display: block; }
+.bc-dropdown-menu--right { right: 0; }
+.bc-dropdown-menu--left { left: 0; }
+.bc-dropdown-menu__item { padding: 8px 12px; font-size: 12px; color: var(--bc-primaryTextColor); cursor: pointer; white-space: nowrap; }
+.bc-dropdown-menu__item:hover { background: var(--bc-themeColor1); }
+.bc-dropdown-menu__item--danger { color: var(--bc-dangerColor); }
+
+/* ==========================================================================
+   Button §5.1
+   ========================================================================== */
+.bc-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--bc-space-4);
+  border-radius: var(--bc-borderRadius); font-weight: 500; font-family: var(--bc-font-family);
+  cursor: pointer; border: 1px solid transparent; background: transparent;
+  transition: background-color .2s var(--bc-easeInOutCirc), border-color .2s var(--bc-easeInOutCirc), color .2s var(--bc-easeInOutCirc);
+  white-space: nowrap; user-select: none;
+}
+.bc-btn--small { height: var(--bc-height-small); padding: 0 var(--bc-space-12); font-size: var(--bc-fontSize-small); }
+.bc-btn--medium { height: var(--bc-height-medium); padding: 0 var(--bc-space-12); font-size: var(--bc-fontSize-medium-control); }
+.bc-btn--large { height: var(--bc-height-large); padding: 0 var(--bc-space-16); font-size: var(--bc-fontSize-large); gap: var(--bc-space-8); }
+.bc-btn--icon-only.bc-btn--medium { width: var(--bc-height-medium); padding: 0; }
+
+.bc-btn--primary { background: var(--bc-themeColor); border-color: var(--bc-themeColor); color: #fff; }
+.bc-btn--primary:hover:not(:disabled) { background: var(--bc-themeColor7); border-color: var(--bc-themeColor7); }
+.bc-btn--primary:active:not(:disabled) { background: var(--bc-themeColor8); border-color: var(--bc-themeColor8); }
+
+.bc-btn--secondary { background: #fff; border-color: var(--bc-themeColor); color: var(--bc-themeColor); }
+.bc-btn--secondary:hover:not(:disabled) { border-color: var(--bc-themeColor7); color: var(--bc-themeColor7); }
+
+.bc-btn--gray { background: #fff; border-color: #adadad; color: var(--bc-primaryTextColor); }
+.bc-btn--gray:hover:not(:disabled) { border-color: var(--bc-themeColor7); color: var(--bc-themeColor7); }
+
+.bc-btn--danger { background: var(--bc-dangerColor); border-color: var(--bc-dangerColor); color: #fff; }
+.bc-btn--danger:hover:not(:disabled) { background: var(--bc-dangerColor-hover); border-color: var(--bc-dangerColor-hover); }
+
+.bc-btn--secondaryDanger { background: #fff; border-color: var(--bc-dangerColor); color: var(--bc-dangerColor); }
+.bc-btn--secondaryDanger:hover:not(:disabled) { border-color: var(--bc-dangerColor-hover); color: var(--bc-dangerColor-hover); }
+
+.bc-btn--grayDanger { background: #fff; border-color: #adadad; color: var(--bc-primaryTextColor); }
+.bc-btn--grayDanger:hover:not(:disabled) { border-color: var(--bc-dangerColor-hover); color: var(--bc-dangerColor-hover); }
+
+.bc-btn--textPrimary { background: transparent; color: var(--bc-themeColor); padding: 0; height: auto; }
+.bc-btn--textPrimary:hover:not(:disabled) { color: var(--bc-themeColor7); }
+
+.bc-btn--text { background: transparent; color: var(--bc-primaryTextColor); padding: 0; height: auto; border-bottom: 1px solid rgba(0,0,0,.4); border-radius: 0; }
+.bc-btn--text:hover:not(:disabled) { color: var(--bc-themeColor7); border-color: var(--bc-themeColor7); }
+
+.bc-btn--textTip { background: transparent; color: var(--bc-primaryTextColor); padding: 0; height: auto; cursor: default; }
+
+.bc-btn:disabled { cursor: not-allowed; background: var(--bc-disabledBgColor) !important; border-color: var(--bc-borderColor) !important; color: var(--bc-hintTextColor) !important; }
+.bc-btn--textPrimary:disabled, .bc-btn--text:disabled { background: transparent !important; border-color: transparent !important; }
+.bc-btn__loading-icon { animation: bc-spin .8s linear infinite; }
+
+/* ==========================================================================
+   Input §5.2 / TextArea
+   ========================================================================== */
+.bc-input-wrap {
+  display: inline-flex; align-items: stretch; background: var(--bc-bgColor); border: 1px solid var(--bc-borderColor);
+  border-radius: var(--bc-borderRadius); width: 100%; height: var(--bc-height-medium);
+  transition: border-color .2s var(--bc-easeInOutCirc), box-shadow .2s var(--bc-easeInOutCirc);
+}
+.bc-input-wrap:hover { border-color: var(--bc-hoverBorderColor); }
+.bc-input-wrap:focus-within { border-color: var(--bc-themeColor); box-shadow: 0 0 0 2px var(--bc-boxShadowColor); }
+.bc-input-wrap--error { border-color: var(--bc-dangerColor) !important; }
+.bc-input {
+  flex: 1 1 auto; min-width: 0; border: none; outline: none; background: transparent;
+  color: var(--bc-primaryTextColor); font-size: var(--bc-fontSize-medium-control); font-family: var(--bc-font-family);
+  padding: 0 var(--bc-space-8); width: 100%;
+}
+.bc-input::placeholder { color: var(--bc-placeholderColor); }
+.bc-input__clear { display: none; align-items: center; justify-content: center; width: 24px; border: none; background: transparent; cursor: pointer; color: var(--bc-icon-color); padding: 0; flex-shrink: 0; }
+.bc-input__clear.show { display: inline-flex; }
+.bc-input__clear:hover { color: var(--bc-icon-hoverColor); }
+.bc-textarea {
+  width: 100%; min-height: 76px; border: 1px solid var(--bc-borderColor); border-radius: var(--bc-borderRadius);
+  padding: var(--bc-space-8); font-family: var(--bc-font-family); font-size: var(--bc-fontSize-medium-control);
+  color: var(--bc-primaryTextColor); resize: vertical; outline: none;
+  transition: border-color .2s var(--bc-easeInOutCirc), box-shadow .2s var(--bc-easeInOutCirc);
+}
+.bc-textarea:hover { border-color: var(--bc-hoverBorderColor); }
+.bc-textarea:focus { border-color: var(--bc-themeColor); box-shadow: 0 0 0 2px var(--bc-boxShadowColor); }
+.bc-textarea::placeholder { color: var(--bc-placeholderColor); }
+
+/* ==========================================================================
+   Form §5.3
+   ========================================================================== */
+.bc-form-item { margin-bottom: 0; display: flex; align-items: flex-start; }
+.bc-form-item__label {
+  flex: 0 0 104px; width: 104px; text-align: right; padding-right: var(--bc-space-16); line-height: 1.5;
+  height: var(--bc-height-medium); display: flex; align-items: center; justify-content: flex-end;
+  font-size: var(--bc-fontSize-medium-control); color: var(--bc-primaryTextColor); flex-shrink: 0; white-space: nowrap;
+}
+.bc-form-item__required { color: var(--bc-dangerColor); margin-right: 4px; }
+.bc-form-item__content { flex: 1 1 auto; min-width: 0; line-height: 1.5; }
+.bc-form-item__error-text { color: var(--bc-dangerColor); font-size: 11px; margin-top: 4px; }
+.bc-form-item.error .bc-input-wrap { border-color: var(--bc-dangerColor) !important; animation: bc-error-shake .4s var(--bc-easeInOutCirc); }
+
+/* ==========================================================================
+   Select §5.4 —— 非原生控件
+   ========================================================================== */
+.bc-select { position: relative; width: 100%; }
+.bc-select__control {
+  display: flex; align-items: center; min-height: var(--bc-height-medium); border: 1px solid var(--bc-borderColor);
+  border-radius: var(--bc-borderRadius); background: var(--bc-bgColor); padding: 0 8px; cursor: pointer; gap: 4px;
+  transition: border-color .2s var(--bc-easeInOutCirc), box-shadow .2s var(--bc-easeInOutCirc); font-size: var(--bc-fontSize-medium-control);
+}
+.bc-select__control:hover { border-color: var(--bc-hoverBorderColor); }
+.bc-select.open .bc-select__control { border-color: var(--bc-themeColor); box-shadow: 0 0 0 2px var(--bc-boxShadowColor); }
+.bc-select__values { flex: 1 1 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; overflow: hidden; }
+.bc-select__placeholder { color: var(--bc-placeholderColor); }
+.bc-select__single-value { color: var(--bc-primaryTextColor); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bc-select__icons { display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.bc-select__clear { border: none; background: transparent; cursor: pointer; color: var(--bc-icon-color); display: none; padding: 0; }
+.bc-select__clear:hover { color: var(--bc-icon-hoverColor); }
+.bc-select.has-value .bc-select__clear { display: inline-flex; }
+.bc-select__arrow { color: var(--bc-arrowIconColor); transition: transform .2s var(--bc-easeInOutCirc); flex-shrink: 0; }
+.bc-select.open .bc-select__arrow { transform: rotate(180deg); }
+.bc-select__panel {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; min-height: 40px; max-height: 220px; overflow-y: auto;
+  background: #fff; border: 1px solid #e8e8e8; border-radius: var(--bc-borderRadius); box-shadow: var(--bc-boxShadow-popup);
+  z-index: var(--bc-z-selectDropdown); padding: 4px 0; display: none;
+}
+.bc-select.open .bc-select__panel { display: block; }
+.bc-select__option { padding: 5px 12px; line-height: 1.5; cursor: pointer; color: var(--bc-primaryTextColor); font-size: var(--bc-fontSize-medium-control); }
+.bc-select__option:hover { background: var(--bc-themeColor1); }
+.bc-select__option.active { color: var(--bc-themeColor); font-weight: 700; }
+.bc-select__empty { padding: 12px; text-align: center; color: var(--bc-thirdlyTextColor); background: #f7f7f7; font-size: var(--bc-fontSize-small); }
+
+/* ==========================================================================
+   Tag §5.7
+   ========================================================================== */
+.bc-tag {
+  display: inline-flex; align-items: center; gap: 4px; padding: 0 4px; border-radius: var(--bc-borderRadius);
+  border: 1px solid transparent; line-height: 1.6; white-space: nowrap; font-size: var(--bc-fontSize-small);
+}
+.bc-tag--info { color: var(--bc-tag-info-color); background: var(--bc-tag-info-bg); border-color: var(--bc-tag-info-border); }
+.bc-tag--warn { color: var(--bc-tag-warn-color); background: var(--bc-tag-warn-bg); border-color: var(--bc-tag-warn-border); }
+.bc-tag--danger { color: var(--bc-tag-danger-color); background: var(--bc-tag-danger-bg); border-color: var(--bc-tag-danger-border); }
+.bc-tag--success { color: var(--bc-tag-success-color); background: var(--bc-tag-success-bg); border-color: var(--bc-tag-success-border); }
+.bc-tag--fail { color: var(--bc-tag-fail-color); background: var(--bc-tag-fail-bg); border-color: var(--bc-tag-fail-border); }
+.bc-tag--gray { color: var(--bc-tag-gray-color); background: var(--bc-tag-gray-bg); border-color: transparent; }
+.bc-tag__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.bc-tag__close { border: none; background: transparent; color: currentColor; opacity: .6; cursor: pointer; display: inline-flex; padding: 0; }
+.bc-tag__close:hover { opacity: 1; }
+
+/* ==========================================================================
+   Checkbox / Radio §5.5
+   ========================================================================== */
+.bc-checkbox { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--bc-fontSize-medium-control); color: var(--bc-primaryTextColor); }
+.bc-checkbox input { width: 0; height: 0; opacity: 0; position: absolute; }
+.bc-checkbox__box {
+  width: 14px; height: 14px; border-radius: 2px; border: 1px solid var(--bc-borderColor); background: #fff;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: background-color .2s var(--bc-easeInOutCirc), border-color .2s var(--bc-easeInOutCirc);
+}
+.bc-checkbox:hover .bc-checkbox__box { border-color: var(--bc-hoverBorderColor); }
+.bc-checkbox.checked .bc-checkbox__box, .bc-checkbox.indeterminate .bc-checkbox__box { background: var(--bc-themeColor); border-color: var(--bc-themeColor); }
+.bc-checkbox__box svg { display: none; }
+.bc-checkbox.checked .bc-checkbox__box svg.chk { display: block; }
+.bc-checkbox__indeterminate-bar { display: none; width: 8px; height: 2px; background: #fff; border-radius: 1px; }
+.bc-checkbox.indeterminate .bc-checkbox__indeterminate-bar { display: block; }
+.bc-checkbox.disabled { cursor: not-allowed; color: var(--bc-disabledTextColor); }
+.bc-checkbox.disabled .bc-checkbox__box { background: var(--bc-disabledBgColor); border-color: var(--bc-borderColor); }
+
+.bc-radio-group { display: inline-flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.bc-radio { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--bc-fontSize-medium-control); color: var(--bc-primaryTextColor); }
+.bc-radio input { width: 0; height: 0; opacity: 0; position: absolute; }
+.bc-radio__circle { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--bc-borderColor); background: #fff; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: border-color .2s var(--bc-easeInOutCirc); }
+.bc-radio:hover .bc-radio__circle { border-color: var(--bc-hoverBorderColor); }
+.bc-radio.checked .bc-radio__circle { border-color: var(--bc-themeColor); }
+.bc-radio__dot { display: none; width: 8px; height: 8px; border-radius: 50%; background: var(--bc-themeColor); }
+.bc-radio.checked .bc-radio__dot { display: block; }
+
+.bc-radio-group--buttonGhost { gap: 10px; }
+.bc-radio-btn { height: var(--bc-height-medium); padding: 0 12px; border-radius: var(--bc-borderRadius); font-size: var(--bc-fontSize-medium-control); cursor: pointer; transition: all .2s var(--bc-easeInOutCirc); background: transparent; border: 1px solid var(--bc-borderColor); color: var(--bc-primaryTextColor); }
+.bc-radio-btn.active { border-color: var(--bc-themeColor); color: var(--bc-themeColor); }
+
+/* ==========================================================================
+   Switch §5.6
+   ========================================================================== */
+.bc-switch { display: inline-flex; align-items: center; border: none; border-radius: 999px; background: var(--bc-borderColor); cursor: pointer; padding: 2px; transition: background-color .2s var(--bc-easeInOutCirc); flex-shrink: 0; width: 48px; height: 24px; }
+.bc-switch--small { width: 32px; height: 16px; }
+.bc-switch:hover:not(.disabled) { background: rgba(0,0,0,.32); }
+.bc-switch.checked { background: var(--bc-themeColor); justify-content: flex-end; }
+.bc-switch.checked:hover:not(.disabled) { background: var(--bc-themeColor7); }
+.bc-switch__dot { width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform .2s var(--bc-easeInOutCirc); }
+.bc-switch--small .bc-switch__dot { width: 12px; height: 12px; }
+.bc-switch.disabled { cursor: not-allowed; opacity: .7; }
+
+/* ==========================================================================
+   Badge §5.8
+   ========================================================================== */
+.bc-badge-wrap { position: relative; display: inline-flex; }
+.bc-badge { position: absolute; top: -6px; right: -8px; min-width: 12px; height: 16px; padding: 0 4.1px; background: #ff1818; color: #fff; border-radius: var(--bc-borderRadius-badge); font-size: 11px; line-height: 16px; text-align: center; display: inline-flex; align-items: center; justify-content: center; }
+.bc-badge--dot { min-width: 8px; width: 8px; height: 8px; padding: 0; top: -2px; right: -2px; }
+
+/* ==========================================================================
+   Card §5.9
+   ========================================================================== */
+.bc-card { position: relative; background: #fff; border: 1px solid var(--bc-borderColor); border-radius: var(--bc-borderRadius-card); overflow: hidden; }
+.bc-card.selected { border-color: var(--bc-themeColor); }
+.bc-card__checked-triangle { position: absolute; top: 0; right: 0; width: 0; height: 0; border-top: 24px solid var(--bc-themeColor); border-left: 24px solid transparent; z-index: 1; display: none; }
+.bc-card.selected .bc-card__checked-triangle { display: block; }
+.bc-card__checked-icon { position: absolute; top: -23px; right: 1px; color: #fff; }
+.bc-card__header { height: 40px; padding: 12px 40px 12px 12px; display: flex; align-items: center; justify-content: space-between; font-size: 14px; font-weight: 600; color: var(--bc-primaryTextColor); border-bottom: 1px solid var(--bc-divideColor); }
+.bc-card__body { padding: 12px; }
+
+/* ==========================================================================
+   Table §5.10
+   ========================================================================== */
+.bc-table-wrap { width: 100%; overflow-x: auto; background: #fff; position: relative; }
+.bc-table { width: 100%; border-collapse: collapse; font-size: var(--bc-fontSize-medium); min-width: 1040px; }
+.bc-table th { background: #f5f5f5; color: var(--bc-primaryTextColor); font-weight: 500; line-height: 18px; padding: 9px 12px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--bc-divideColor); }
+.bc-table th.sortable { cursor: pointer; }
+.bc-table__sort-icons { display: inline-flex; flex-direction: column; gap: 1px; margin-left: 4px; vertical-align: middle; }
+.bc-table__sort-icon { color: var(--bc-borderColor); }
+.bc-table__sort-icon.active { color: var(--bc-themeColor); }
+.bc-table tbody tr { transition: background-color .15s; }
+.bc-table tbody tr:hover { background: var(--bc-themeColor1); }
+.bc-table tbody tr.selected { background: var(--bc-themeColor1); }
+.bc-table td { padding: 9px 12px; border-bottom: 1px solid var(--bc-divideColor); color: var(--bc-primaryTextColor); vertical-align: middle; }
+.bc-table__empty { padding: 64px 0; text-align: center; color: var(--bc-thirdlyTextColor); }
+
+/* ==========================================================================
+   Modal §5.11
+   ========================================================================== */
+.bc-modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: var(--bc-z-modalMask); display: none; align-items: center; justify-content: center; animation: bc-fade-in .2s var(--bc-easeInOutCirc); }
+.bc-modal-mask.open { display: flex; }
+.bc-modal { position: relative; background: #fff; border-radius: var(--bc-borderRadius); z-index: var(--bc-z-modal); max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 6px 24px rgba(0,0,0,.2); width: 640px; max-width: calc(100vw - 32px); }
+.bc-modal__header { position: relative; padding: 8px 12px; font-size: 16px; font-weight: 600; color: var(--bc-primaryTextColor); border-bottom: 1px solid var(--bc-divideColor); }
+.bc-modal__close { position: absolute; right: 12px; top: 12px; border: none; background: transparent; color: var(--bc-icon-color); cursor: pointer; display: inline-flex; padding: 0; }
+.bc-modal__close:hover { color: var(--bc-icon-hoverColor); }
+.bc-modal__body { padding: 24px 24px 20px; font-size: 12px; line-height: 20px; color: var(--bc-primaryTextColor); overflow-y: auto; }
+.bc-modal__footer { display: flex; justify-content: flex-end; gap: 8px; padding: 0 24px 20px; }
+
+/* ==========================================================================
+   Drawer §5.20 / §9.5
+   ========================================================================== */
+.bc-drawer-mask { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: var(--bc-z-modal); display: none; justify-content: flex-end; animation: bc-fade-in .2s var(--bc-easeInOutCirc); }
+.bc-drawer-mask.open { display: flex; }
+.bc-drawer { height: 100vh; width: 560px; max-width: calc(100vw - 32px); background: #fff; display: flex; flex-direction: column; box-shadow: -4px 0 16px rgba(0,0,0,.1); }
+.bc-drawer__header { position: relative; height: 48px; flex-shrink: 0; display: flex; align-items: center; padding: 0 16px 0 24px; font-size: 16px; font-weight: 600; border-bottom: 1px solid var(--bc-divideColor); }
+.bc-drawer__close { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); border: none; background: transparent; color: var(--bc-icon-color); cursor: pointer; display: inline-flex; }
+.bc-drawer__close:hover { color: var(--bc-icon-hoverColor); }
+.bc-drawer__body { flex: 1 1 auto; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+.bc-drawer__footer { flex-shrink: 0; display: flex; justify-content: flex-end; gap: 8px; padding: 12px 24px; border-top: 1px solid var(--bc-divideColor); }
+
+/* ==========================================================================
+   Toast §5.12
+   ========================================================================== */
+.bc-toast-container { position: fixed; top: 56px; left: 50%; transform: translateX(-50%); z-index: var(--bc-z-toast); display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
+.bc-toast { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: var(--bc-borderRadius-toast); max-width: 766px; font-size: 14px; border: 1px solid transparent; animation: bc-fade-in .3s cubic-bezier(.55,0,.55,.2); }
+.bc-toast--success { color: var(--bc-status-success-color); background: var(--bc-status-success-bg); border-color: var(--bc-status-success-border); box-shadow: var(--bc-boxShadow-toast-success); }
+.bc-toast--warn { color: var(--bc-status-warn-color); background: var(--bc-status-warn-bg); border-color: var(--bc-status-warn-border); box-shadow: var(--bc-boxShadow-toast-warn); }
+.bc-toast--error { color: var(--bc-status-error-color); background: var(--bc-status-error-bg); border-color: var(--bc-status-error-border); box-shadow: var(--bc-boxShadow-toast-error); }
+.bc-toast--info { color: var(--bc-status-info-color); background: var(--bc-status-info-bg); border-color: var(--bc-status-info-border); }
+.bc-toast__text { color: var(--bc-primaryTextColor); }
+
+/* ==========================================================================
+   Tooltip / Popover §5.13
+   ========================================================================== */
+.bc-tooltip-wrap { position: relative; display: inline-flex; }
+.bc-tooltip { position: absolute; z-index: var(--bc-z-tooltip); background: #fff; color: var(--bc-primaryTextColor); padding: 5px 9px; font-size: 12px; border-radius: var(--bc-borderRadius); box-shadow: var(--bc-boxShadow-tooltip); white-space: nowrap; display: none; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); }
+.bc-tooltip-wrap:hover .bc-tooltip { display: block; animation: bc-fade-in .15s ease; }
+
+.bc-popover-wrap { position: relative; display: inline-flex; }
+.bc-popover { position: absolute; z-index: var(--bc-z-popover); background: #fff; border-radius: var(--bc-borderRadius); box-shadow: var(--bc-boxShadow-popup); padding: 5px 9px; min-width: 120px; display: none; flex-direction: column; gap: 4px; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); animation: bc-fade-in .15s ease; }
+.bc-popover.open { display: flex; }
+.bc-popover--confirm { min-width: 280px; padding: 12px; }
+.bc-popover__title { font-size: 14px; font-weight: 700; color: var(--bc-primaryTextColor); }
+.bc-popover__content { font-size: 12px; color: var(--bc-secondaryTextColor); }
+.bc-popover__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.bc-tooltip-wrap.hover-demo:hover .bc-tooltip { display: block; }
+
+/* ==========================================================================
+   Progress §5.14
+   ========================================================================== */
+.bc-progress-line { display: inline-flex; align-items: center; gap: 8px; width: 100%; }
+.bc-progress-line__track { flex: 1 1 auto; height: 6px; border-radius: 3px; background: var(--bc-trackColor); overflow: hidden; }
+.bc-progress-line__fill { display: block; height: 100%; border-radius: 3px; transition: width .3s var(--bc-easeInOutCirc); background: var(--bc-themeColor); }
+.bc-progress-line__fill.exception { background: #ff1818; }
+.bc-progress-line__text { font-size: 12px; color: var(--bc-secondaryTextColor); min-width: 34px; }
+.bc-progress-circle { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+.bc-progress-circle__text { position: absolute; font-size: 14px; color: var(--bc-primaryTextColor); font-weight: 600; }
+
+/* ==========================================================================
+   Spin §5.15
+   ========================================================================== */
+.bc-spin-container { position: relative; }
+.bc-spin-mask { position: absolute; inset: 0; background: rgba(238,238,238,.4); display: none; align-items: center; justify-content: center; z-index: var(--bc-z-spin); }
+.bc-spin-mask.show { display: flex; }
+.bc-spin__content { display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--bc-themeColor); }
+
+/* ==========================================================================
+   Tabs §5.16
+   ========================================================================== */
+.bc-tabs { display: flex; align-items: center; }
+.bc-tabs__item { background: transparent; border: none; cursor: pointer; color: var(--bc-secondaryTextColor); display: inline-flex; align-items: center; gap: 4px; transition: color .2s var(--bc-easeInOutCirc); }
+.bc-tabs__item:hover { color: var(--bc-themeColor); }
+.bc-tabs__item.active { color: var(--bc-themeColor); }
+
+.bc-tabs--line { gap: 8px; border-bottom: 1px solid #e8e8e8; }
+.bc-tabs--line .bc-tabs__item { font-size: 16px; font-weight: 500; padding: 12px 12px; position: relative; }
+.bc-tabs--line .bc-tabs__item.active::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px; border-radius: 1px; background: var(--bc-themeColor); }
+
+.bc-tabs--capsule { gap: 8px; flex-wrap: wrap; }
+.bc-tabs--capsule .bc-tabs__item { font-size: 12px; padding: 7px 16px; border-radius: var(--bc-borderRadius); border: 1px solid var(--bc-borderColor); color: var(--bc-primaryTextColor); }
+.bc-tabs--capsule .bc-tabs__item.active { border-color: var(--bc-themeColor); color: var(--bc-themeColor); background: var(--bc-themeColor1); }
+
+.bc-tabs--card { gap: 0; border-bottom: 1px solid var(--bc-borderColor); }
+.bc-tabs--card .bc-tabs__item { font-size: 12px; padding: 8px 20px; border: 1px solid transparent; border-bottom: none; }
+.bc-tabs--card .bc-tabs__item.active { border-color: var(--bc-borderColor); background: #fff; border-radius: 6px 6px 0 0; }
+
+.bc-tabs--reunit { width: 100%; }
+.bc-tabs--reunit .bc-tabs__item { flex: 1; justify-content: center; font-size: 12px; padding: 16px; border-top: 2px solid transparent; }
+.bc-tabs--reunit .bc-tabs__item:hover { background: var(--bc-themeColor1); }
+.bc-tabs--reunit .bc-tabs__item.active { border-top-color: var(--bc-themeColor); }
+
+/* ==========================================================================
+   Pagination §5.17
+   ========================================================================== */
+.bc-pagination { display: flex; align-items: center; gap: 16px; height: 28px; flex-wrap: wrap; justify-content: flex-end; }
+.bc-pagination__total { font-size: 12px; font-weight: 400; color: var(--bc-secondaryTextColor); order: -1; margin-right: auto; }
+.bc-pagination__pages { display: flex; align-items: center; gap: 6px; }
+.bc-pagination__arrow, .bc-pagination__item { min-width: 28px; height: 28px; padding: 0 4px; border-radius: var(--bc-borderRadius); border: 1px solid var(--bc-borderColor); background: #fff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; color: var(--bc-primaryTextColor); }
+.bc-pagination__arrow { color: var(--bc-arrowColor); }
+.bc-pagination__arrow:hover:not(:disabled), .bc-pagination__item:hover { border-color: var(--bc-hoverBorderColor); color: var(--bc-hoverBorderColor); }
+.bc-pagination__item.active { background: var(--bc-themeColor); border-color: var(--bc-themeColor); color: #fff; }
+.bc-pagination__arrow:disabled { color: rgba(0,0,0,.14); border-color: #ccc; cursor: not-allowed; }
+.bc-pagination__jump { color: var(--bc-thirdlyTextColor); padding: 0 2px; }
+.bc-pagination__jumper { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--bc-secondaryTextColor); }
+.bc-pagination__jump-input { width: 40px; height: 24px; text-align: center; border: 1px solid var(--bc-borderColor); border-radius: var(--bc-borderRadius); outline: none; }
+.bc-pagination__jump-input:focus { border-color: var(--bc-themeColor); }
+.bc-pagination__size-changer { width: 108px; }
+
+/* ==========================================================================
+   Steps §5.18
+   ========================================================================== */
+.bc-steps { display: flex; align-items: flex-start; width: 100%; }
+.bc-step { position: relative; display: flex; align-items: flex-start; gap: 8px; flex: 1 1 auto; }
+.bc-step__icon { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; background: #fff; border: 1px solid var(--bc-borderColor); color: var(--bc-thirdlyTextColor); z-index: 1; }
+.bc-step.process .bc-step__icon { border-color: var(--bc-themeColor); color: var(--bc-themeColor); }
+.bc-step.finish .bc-step__icon { background: var(--bc-themeColor); border-color: var(--bc-themeColor); color: #fff; }
+.bc-step__title { font-size: 14px; color: var(--bc-primaryTextColor); font-weight: 500; }
+.bc-step.wait .bc-step__title { color: var(--bc-thirdlyTextColor); font-weight: 400; }
+.bc-step__desc { font-size: 12px; color: var(--bc-secondaryTextColor); margin-top: 2px; }
+.bc-step__line { position: absolute; top: 12px; left: 24px; right: -50%; height: 1px; background: var(--bc-borderColor); }
+.bc-step.finish .bc-step__line { background: var(--bc-themeColor); }
+
+/* ==========================================================================
+   Collapse / Divider §5.20
+   ========================================================================== */
+.bc-collapse { border: 1px solid var(--bc-divideColor); border-radius: var(--bc-borderRadius); overflow: hidden; }
+.bc-collapse__panel + .bc-collapse__panel { border-top: 1px solid var(--bc-divideColor); }
+.bc-collapse__header { height: 44px; background: #fafafa; display: flex; align-items: center; gap: 8px; padding: 0 12px; cursor: pointer; font-size: 12px; color: var(--bc-primaryTextColor); font-weight: 500; }
+.bc-collapse__arrow { color: var(--bc-arrowIconColor); transition: transform .2s var(--bc-easeInOutCirc); }
+.bc-collapse__panel.open .bc-collapse__arrow { transform: rotate(180deg); }
+.bc-collapse__content { display: none; padding: 12px; font-size: 12px; color: var(--bc-secondaryTextColor); background: #fff; }
+.bc-collapse__panel.open .bc-collapse__content { display: block; }
+
+.bc-divider { display: block; width: 100%; height: 1px; background: var(--bc-divideColor); border: none; margin: 8px 0; }
+.bc-divider--vertical { display: inline-block; width: 1px; height: .9em; background: var(--bc-divideColor); vertical-align: middle; margin: 0 8px; }
+.bc-divider-text-wrap { display: flex; align-items: center; gap: 12px; width: 100%; margin: 8px 0; }
+.bc-divider-text-wrap .bc-divider { margin: 0; }
+.bc-divider-text { font-size: 12px; color: var(--bc-thirdlyTextColor); white-space: nowrap; }
+
+/* ==========================================================================
+   NoticeBar §5.22
+   ========================================================================== */
+.bc-notice-bar { display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px; border-radius: var(--bc-borderRadius-noticeBar); border: 1px solid transparent; font-size: 12px; line-height: 1.5; color: var(--bc-primaryTextColor); }
+.bc-notice-bar svg { flex-shrink: 0; margin-top: 1px; }
+.bc-notice-bar--info { background: var(--bc-status-info-bg); border-color: var(--bc-status-info-border); color: var(--bc-status-info-color); }
+.bc-notice-bar--warn { background: var(--bc-status-warn-bg); border-color: var(--bc-status-warn-border); color: var(--bc-status-warn-color); }
+.bc-notice-bar--error { background: var(--bc-status-error-bg); border-color: var(--bc-status-error-border); color: var(--bc-status-error-color); }
+.bc-notice-bar--success { background: var(--bc-status-success-bg); border-color: var(--bc-status-success-border); color: var(--bc-status-success-color); }
+.bc-notice-bar__content { flex: 1 1 auto; color: var(--bc-primaryTextColor); }
+.bc-notice-bar__close { border: none; background: transparent; cursor: pointer; color: var(--bc-icon-color); margin-left: 8px; display: inline-flex; flex-shrink: 0; }
+.bc-notice-bar__close:hover { color: var(--bc-primaryTextColor); }
+
+/* ==========================================================================
+   DatePicker / RangePicker §5.23
+   ========================================================================== */
+.bc-datepicker { position: relative; width: 100%; }
+.bc-datepicker__control { display: flex; align-items: center; gap: 6px; height: var(--bc-height-medium); padding: 0 8px; border: 1px solid var(--bc-borderColor); border-radius: var(--bc-borderRadius); background: #fff; cursor: pointer; font-size: var(--bc-fontSize-medium-control); transition: border-color .2s var(--bc-easeInOutCirc), box-shadow .2s var(--bc-easeInOutCirc); }
+.bc-datepicker__control:hover { border-color: var(--bc-hoverBorderColor); }
+.bc-datepicker.open .bc-datepicker__control { border-color: var(--bc-themeColor); box-shadow: 0 0 0 2px var(--bc-boxShadowColor); }
+.bc-datepicker__calendar-icon { color: var(--bc-thirdlyTextColor); flex-shrink: 0; }
+.bc-datepicker__value { color: var(--bc-primaryTextColor); }
+.bc-datepicker__placeholder { color: var(--bc-placeholderColor); }
+.bc-rangepicker__sep { color: var(--bc-thirdlyTextColor); padding: 0 2px; }
+.bc-datepicker__panel { position: absolute; top: calc(100% + 4px); left: 0; width: 280px; background: #fff; border: 1px solid #e8e8e8; border-radius: var(--bc-borderRadius); box-shadow: var(--bc-boxShadow-popup); z-index: var(--bc-z-selectDropdown); padding: 10px; display: none; }
+.bc-datepicker.open .bc-datepicker__panel { display: block; }
+.bc-datepicker__panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.bc-datepicker__nav { border: none; background: transparent; cursor: pointer; color: var(--bc-arrowIconColor); display: inline-flex; padding: 4px; }
+.bc-datepicker__nav:hover { color: var(--bc-icon-hoverColor); }
+.bc-datepicker__panel-title { font-size: 12px; font-weight: 600; color: var(--bc-primaryTextColor); }
+.bc-datepicker__weekrow { display: grid; grid-template-columns: repeat(7,1fr); text-align: center; font-size: 11px; color: var(--bc-thirdlyTextColor); margin-bottom: 4px; }
+.bc-datepicker__grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+.bc-datepicker__cell { width: 24px; height: 30px; border: none; background: transparent; border-radius: var(--bc-borderRadius); font-size: 12px; color: var(--bc-primaryTextColor); cursor: pointer; justify-self: center; }
+.bc-datepicker__cell:hover { background: var(--bc-themeColor1); }
+.bc-datepicker__cell.outside { color: var(--bc-hintTextColor); }
+.bc-datepicker__cell.today { border: 1px solid var(--bc-themeColor); }
+.bc-datepicker__cell.in-range { background: var(--bc-themeColor1); border-radius: 0; }
+.bc-datepicker__cell.selected { background: var(--bc-themeColor); color: #fff; }
+
+/* ==========================================================================
+   Space / Grid §5.21
+   ========================================================================== */
+.bc-space { display: flex; align-items: center; gap: 8px; }
+.bc-space--wrap { flex-wrap: wrap; }
+.bc-row { display: flex; flex-wrap: wrap; margin: 0 -8px; }
+.bc-col { padding: 0 8px; box-sizing: border-box; }
+
+/* ==========================================================================
+   任务管理列表页面专属样式 §12.1
+   ========================================================================== */
+.task-page { min-height: 100%; background: var(--bc-canvasBgColor); padding: 0 0 24px; }
+.task-page__panel { background: #fff; padding: 16px 16px 0; }
+.task-page__panel:last-child { padding-bottom: 16px; }
+.task-page__gap { height: 10px; }
+.task-page__capsule-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 12px 0; border-bottom: 1px solid var(--bc-divideColor); margin-bottom: 16px; }
+.task-page__capsule-divider { width: 1px; height: 20px; background: var(--bc-divideColor); }
+.task-page__urgent-checkbox { margin-left: auto; }
+.task-search-form__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 16px; }
+@media (max-width: 1400px) { .task-search-form__grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 1100px) { .task-search-form__grid { grid-template-columns: repeat(2, 1fr); } }
+.task-search-form__actions { display: flex; align-items: center; gap: 16px; margin: 12px 0 16px; }
+.task-page__notice { margin-bottom: 12px; }
+.task-action-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.task-action-bar__left, .task-action-bar__right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.task-page__pagination { margin-top: 0; padding: 12px 0 0; }
+.task-link { color: var(--bc-linkColor); font-weight: 500; background: none; border: none; cursor: pointer; padding: 0; font-size: 12px; }
+.task-name-cell { display: flex; flex-direction: column; gap: 4px; max-width: 240px; }
+.task-name-cell__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.task-name-cell__tags { display: flex; gap: 4px; }
+.task-owner-cell { display: inline-flex; align-items: center; gap: 6px; }
+.task-owner-cell__avatar { width: 20px; height: 20px; border-radius: 50%; background: var(--bc-themeColor4); color: #fff; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.task-actions { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.task-more-btn { border: none; background: transparent; color: var(--bc-icon-color); cursor: pointer; display: inline-flex; align-items: center; padding: 4px; }
+.task-more-btn:hover { color: var(--bc-icon-hoverColor); }
+
+.create-task__templates { margin-bottom: 20px; }
+.create-task__templates-label { font-size: 12px; color: var(--bc-secondaryTextColor); margin-bottom: 8px; }
+.create-task__template-card { width: 168px; cursor: pointer; }
+.create-task__template-title { font-size: 14px; font-weight: 600; color: var(--bc-primaryTextColor); margin-bottom: 4px; }
+.create-task__template-desc { font-size: 12px; color: var(--bc-secondaryTextColor); line-height: 1.5; }
+
+.task-detail__status-block { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: var(--bc-borderRadius); font-size: 12px; line-height: 1.6; }
+.task-detail__status-block--warn { background: var(--bc-status-warn-bg); border: 1px solid var(--bc-status-warn-border); color: var(--bc-status-warn-color); }
+.task-detail__status-block--success { background: var(--bc-status-success-bg); border: 1px solid var(--bc-status-success-border); color: var(--bc-status-success-color); }
+.task-detail__row { display: flex; align-items: center; gap: 12px; font-size: 12px; margin-bottom: 10px; }
+.task-detail__row:last-child { margin-bottom: 0; }
+.task-detail__label { width: 72px; flex-shrink: 0; color: var(--bc-secondaryTextColor); }
+.task-detail__progress-row { display: flex; align-items: center; gap: 20px; }
+.task-detail__progress-title { font-size: 14px; font-weight: 600; color: var(--bc-primaryTextColor); margin-bottom: 4px; }
+.task-detail__progress-sub { font-size: 12px; color: var(--bc-secondaryTextColor); }
+
+/* ==========================================================================
+   组件规范速查页面
+   ========================================================================== */
+.gallery-page { padding: 20px 24px 40px; max-width: 1200px; }
+.gallery-page__intro h1 { font-size: 20px; margin: 0 0 8px; color: var(--bc-primaryTextColor); }
+.gallery-page__intro p { font-size: 12px; line-height: 1.8; color: var(--bc-secondaryTextColor); margin: 0 0 20px; }
+.gallery-section { background: #fff; border-radius: var(--bc-borderRadius); border: 1px solid var(--bc-divideColor); padding: 20px 24px; margin-bottom: 16px; }
+.gallery-section__header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--bc-divideColor); }
+.gallery-section__title { font-size: 16px; font-weight: 600; color: var(--bc-primaryTextColor); margin: 0; }
+.gallery-section__spec { font-size: 12px; color: var(--bc-thirdlyTextColor); }
+.gallery-section__body { display: flex; flex-direction: column; gap: 16px; }
+.gallery-row { display: flex; align-items: flex-start; gap: 16px; }
+.gallery-row__label { width: 96px; flex-shrink: 0; font-size: 12px; color: var(--bc-secondaryTextColor); padding-top: 6px; }
+.gallery-row__content { flex: 1 1 auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.color-swatch { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 84px; }
+.color-swatch__block { width: 64px; height: 40px; border-radius: 4px; border: 1px solid rgba(0,0,0,.06); }
+.color-swatch__label { font-size: 11px; color: var(--bc-secondaryTextColor); text-align: center; }
+.color-swatch__value { font-size: 10px; color: var(--bc-thirdlyTextColor); }
+.status-triple-demo { width: 96px; height: 48px; border-radius: var(--bc-borderRadius); border: 1px solid; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+.gallery-badge-anchor { display: inline-flex; padding: 4px 10px; background: #f5f5f5; border-radius: 4px; font-size: 12px; color: var(--bc-primaryTextColor); }
+.gallery-spin-demo { width: 240px; height: 80px; background: #f7f7f7; border-radius: var(--bc-borderRadius); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--bc-thirdlyTextColor); }
+.gallery-menu-demo { width: 200px; background: #001529; border-radius: var(--bc-borderRadius); overflow: hidden; padding: 4px 0; }
+.gallery-grid-block { background: var(--bc-themeColor1); color: var(--bc-themeColor); text-align: center; padding: 12px 0; border-radius: 4px; font-size: 12px; width: 100%; }
+.gallery-zindex-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.gallery-zindex-table th, .gallery-zindex-table td { border: 1px solid var(--bc-divideColor); padding: 8px 12px; text-align: left; }
+.gallery-zindex-table th { background: #f5f5f5; font-weight: 500; }
+.gallery-page-section { display: none; }
+.gallery-page-section.active { display: block; }
+</style>
+</head>
+<body>
+<div id="app" class="app-shell">
+  <!-- ============ Header §5.19 ============ -->
+  <header class="app-header">
+    <div class="app-header__left">
+      <button class="app-header__collapse" id="collapseBtn" aria-label="toggle menu">
+        <svg width="16" height="16" viewBox="0 0 1024 1024" fill="currentColor"><rect x="128" y="192" width="768" height="80" rx="16"/><rect x="128" y="472" width="768" height="80" rx="16"/><rect x="128" y="752" width="768" height="80" rx="16"/></svg>
+      </button>
+      <span class="app-header__logo">Beast&nbsp;Core</span>
+      <span class="app-header__title">任务管理中心</span>
+    </div>
+    <div class="app-header__right">
+      <span class="bc-tooltip-wrap">
+        <span class="bc-badge-wrap app-header__bell">
+          <svg width="18" height="18" viewBox="0 0 1024 1024" fill="currentColor"><path d="M512 64a64 64 0 0 1 64 64v18.3c148.6 27.8 261.3 158.1 261.3 314.6v185.8l72.4 108.6a48 48 0 0 1-40 74.6H154.3a48 48 0 0 1-40-74.6l72.4-108.6V460.9c0-156.5 112.7-286.8 261.3-314.6V128a64 64 0 0 1 64-64zM512 896a96 96 0 0 0 92.4-70.4H419.6A96 96 0 0 0 512 896z"/></svg>
+          <span class="bc-badge">5</span>
+        </span>
+        <span class="bc-tooltip">消息通知</span>
+      </span>
+      <div class="bc-dropdown-wrap">
+        <span class="app-header__user" id="userMenuTrigger">
+          <span class="app-header__avatar">林</span>
+          <span class="app-header__username">林晓雯</span>
+        </span>
+        <ul class="bc-dropdown-menu bc-dropdown-menu--right" id="userMenu">
+          <li class="bc-dropdown-menu__item">个人中心</li>
+          <li class="bc-dropdown-menu__item">账号设置</li>
+          <li class="bc-dropdown-menu__item bc-dropdown-menu__item--danger">退出登录</li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <!-- ============ Sider Menu §5.19 ============ -->
+    <aside class="app-sider" id="appSider">
+      <ul class="bc-menu">
+        <li class="bc-menu__item active" data-page="task-list"><span class="bc-menu__indicator"></span><span class="bc-menu__label">任务管理列表</span></li>
+        <li class="bc-menu__item" data-page="gallery"><span class="bc-menu__indicator"></span><span class="bc-menu__label">组件规范速查</span></li>
+      </ul>
+    </aside>
+
+    <main class="app-main">
+      <div class="app-main__breadcrumb">
+        <nav class="bc-breadcrumb" id="breadcrumb"></nav>
+      </div>
+      <div class="app-main__content">
+
+        <!-- ============================================================ -->
+        <!-- 页面一：任务管理列表 §12.1                                    -->
+        <!-- ============================================================ -->
+        <section class="gallery-page-section active" id="page-task-list">
+          <div class="task-page">
+            <div class="task-page__panel">
+              <!-- 0. 顶部一级业务 Tabs -->
+              <div class="bc-tabs bc-tabs--line" id="businessTabs">
+                <button class="bc-tabs__item active" data-tab="all">全部任务</button>
+                <button class="bc-tabs__item" data-tab="mine">我负责的</button>
+                <button class="bc-tabs__item" data-tab="created">我创建的</button>
+                <button class="bc-tabs__item" data-tab="archived">已归档</button>
+              </div>
+
+              <!-- 1. 快速筛选 / 状态胶囊组 -->
+              <div class="task-page__capsule-row">
+                <div class="bc-tabs bc-tabs--capsule" id="filterModeTabs">
+                  <button class="bc-tabs__item active" data-mode="default">默认筛选</button>
+                  <button class="bc-tabs__item" data-mode="advanced">精细查询</button>
+                </div>
+                <span class="task-page__capsule-divider"></span>
+                <div class="bc-tabs bc-tabs--capsule" id="statusCapsules"></div>
+                <label class="bc-checkbox task-page__urgent-checkbox" id="urgentCheckbox">
+                  <input type="checkbox" />
+                  <span class="bc-checkbox__box"><svg class="chk" viewBox="0 0 1024 1024" width="10" height="10" fill="none"><path d="M180 540 400 750 844 280" stroke="#fff" stroke-width="110" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <span>只看紧急任务</span>
+                </label>
+              </div>
+
+              <!-- 2. 筛选条件区 -->
+              <form id="searchForm">
+                <div class="task-search-form__grid">
+                  <div class="bc-form-item">
+                    <label class="bc-form-item__label">任务名称</label>
+                    <div class="bc-form-item__content">
+                      <span class="bc-input-wrap">
+                        <input class="bc-input" id="filterName" placeholder="请输入任务名称" />
+                        <button type="button" class="bc-input__clear" data-clear="filterName">
+                          <svg width="14" height="14" viewBox="0 0 1024 1024" fill="currentColor"><path d="M512 42.7c259.1 0 469.3 210.2 469.3 469.3S771.1 981.3 512 981.3 42.7 771.1 42.7 512 252.9 42.7 512 42.7zm0 89.6C302.7 132.3 132.3 302.7 132.3 512S302.7 891.7 512 891.7 891.7 721.3 891.7 512 721.3 132.3 512 132.3zM368 336l144 144 144-144a45.3 45.3 0 0 1 64 64L576 544l144 144a45.3 45.3 0 1 1-64 64L512 608 368 752a45.3 45.3 0 1 1-64-64l144-144-144-144a45.3 45.3 0 1 1 64-64z"/></svg>
+                        </button>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="bc-form-item">
+                    <label class="bc-form-item__label">负责人</label>
+                    <div class="bc-form-item__content" id="ownerSelectMount"></div>
+                  </div>
+                  <div class="bc-form-item">
+                    <label class="bc-form-item__label">优先级</label>
+                    <div class="bc-form-item__content" id="prioritySelectMount"></div>
+                  </div>
+                  <div class="bc-form-item">
+                    <label class="bc-form-item__label">状态</label>
+                    <div class="bc-form-item__content" id="statusSelectMount"></div>
+                  </div>
+                  <div class="bc-form-item" id="dueDateFormItem" style="display:none;">
+                    <label class="bc-form-item__label">截止日期</label>
+                    <div class="bc-form-item__content" id="dueDateRangeMount"></div>
+                  </div>
+                </div>
+                <div class="task-search-form__actions">
+                  <button type="submit" class="bc-btn bc-btn--primary bc-btn--medium">查询</button>
+                  <button type="button" class="bc-btn bc-btn--gray bc-btn--medium" id="resetBtn">重置</button>
+                  <button type="button" class="bc-btn bc-btn--textPrimary bc-btn--medium">保存快照</button>
+                  <button type="button" class="bc-btn bc-btn--textPrimary bc-btn--medium" id="toggleFilterModeBtn">
+                    <svg width="10" height="10" viewBox="0 0 1024 1024" fill="currentColor" id="toggleFilterIcon"><path d="M512 646.4 233.6 368a51.2 51.2 0 0 0-72.4 72.4l314.5 314.5a45.7 45.7 0 0 0 64.6 0l314.5-314.5a51.2 51.2 0 0 0-72.4-72.4L512 646.4z"/></svg>
+                    <span id="toggleFilterText">展开</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div class="task-page__gap"></div>
+
+            <div class="task-page__panel">
+              <!-- 3. 业务提示通知条 -->
+              <div class="bc-notice-bar bc-notice-bar--info task-page__notice" id="taskNotice">
+                <svg width="16" height="16" viewBox="0 0 1024 1024" fill="currentColor"><circle cx="512" cy="512" r="470"/><circle cx="512" cy="326" r="56" fill="#fff"/><rect x="456" y="440" width="112" height="330" rx="24" fill="#fff"/></svg>
+                <span class="bc-notice-bar__content" id="noticeText"></span>
+                <button class="bc-notice-bar__close" id="noticeCloseBtn">
+                  <svg width="12" height="12" viewBox="0 0 1024 1024" fill="currentColor"><path d="M512 465.1 761.6 215.5a33.2 33.2 0 0 1 47 47L559 512l249.6 249.5a33.2 33.2 0 1 1-47 47L512 558.9 262.5 808.5a33.2 33.2 0 1 1-47-47L465 512 215.5 262.5a33.2 33.2 0 1 1 47-47L512 465.1z"/></svg>
+                </button>
+              </div>
+
+              <!-- 4. 批量操作与工具栏 -->
+              <div class="task-action-bar">
+                <div class="task-action-bar__left">
+                  <button class="bc-btn bc-btn--primary bc-btn--medium" id="newTaskBtn">
+                    <svg width="12" height="12" viewBox="0 0 1024 1024" fill="currentColor"><path d="M512 128a48 48 0 0 1 48 48v288h288a48 48 0 0 1 0 96H560v288a48 48 0 0 1-96 0V560H176a48 48 0 0 1 0-96h288V176a48 48 0 0 1 48-48z"/></svg>
+                    新建任务
+                  </button>
+                  <button class="bc-btn bc-btn--gray bc-btn--medium" id="batchAssignBtn" disabled>批量指派</button>
+                  <span class="bc-popover-wrap">
+                    <button class="bc-btn bc-btn--grayDanger bc-btn--medium" id="batchDeleteBtn" disabled>批量删除</button>
+                    <div class="bc-popover bc-popover--confirm" id="batchDeletePopover">
+                      <span class="bc-popover__title">批量删除确认</span>
+                      <span class="bc-popover__content" id="batchDeleteContent">确定删除选中的任务吗？</span>
+                      <span class="bc-popover__actions">
+                        <button class="bc-btn bc-btn--gray bc-btn--small" data-popover-cancel>取消</button>
+                        <button class="bc-btn bc-btn--primary bc-btn--small" id="batchDeleteConfirm">确定</button>
+                      </span>
+                    </div>
+                  </span>
+                  <button class="bc-btn bc-btn--gray bc-btn--medium" id="importBtn">导入同步申诉</button>
+                </div>
+                <div class="task-action-bar__right">
+                  <button class="bc-btn bc-btn--textPrimary bc-btn--medium" id="copyIdsBtn">一键复制所选 ID</button>
+                  <button class="bc-btn bc-btn--textPrimary bc-btn--medium" id="appealRecordBtn">查询申诉记录</button>
+                </div>
+              </div>
+
+              <!-- 5. 数据表格与分页区 -->
+              <div class="bc-table-wrap">
+                <table class="bc-table">
+                  <thead>
+                    <tr>
+                      <th style="width:40px;">
+                        <label class="bc-checkbox" id="selectAllCheckbox">
+                          <input type="checkbox" />
+                          <span class="bc-checkbox__box"><svg class="chk" viewBox="0 0 1024 1024" width="10" height="10" fill="none"><path d="M180 540 400 750 844 280" stroke="#fff" stroke-width="110" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="bc-checkbox__indeterminate-bar"></span></span>
+                        </label>
+                      </th>
+                      <th class="sortable" style="width:120px;" data-sort="id">任务 ID <span class="bc-table__sort-icons" data-sort-icons="id"></span></th>
+                      <th>任务名称</th>
+                      <th style="width:110px;">负责人</th>
+                      <th style="width:80px;">优先级</th>
+                      <th style="width:90px;">状态</th>
+                      <th style="width:150px;">进度</th>
+                      <th style="width:90px;" class="bc-tooltip-wrap hover-demo">自动跟踪<span class="bc-tooltip">开启后系统将自动同步任务进度</span></th>
+                      <th class="sortable" style="width:100px;" data-sort="dueDate">截止日期 <span class="bc-table__sort-icons" data-sort-icons="dueDate"></span></th>
+                      <th style="width:160px;">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="taskTableBody"></tbody>
+                </table>
+              </div>
+              <div class="task-page__pagination">
+                <div class="bc-pagination" id="taskPagination"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- 页面二：组件规范速查                                          -->
+        <!-- ============================================================ -->
+        <section class="gallery-page-section" id="page-gallery">
+          <div class="gallery-page">
+            <div class="gallery-page__intro">
+              <h1>Beast Core / OMS 设计规范 —— 组件全览</h1>
+              <p>本页面依据《Beast-Core-设计规范-精简版-02.md》逐条还原第二~五章的色彩、字体、尺寸、组件与交互细节，供逐项比对验证规范文档的可靠性。所有色值、圆角、间距均直接取自文档定义的 Design Token，未做二次调整。本页与整站均为纯静态单文件 HTML + CSS + 原生 JS 实现，无任何构建依赖。</p>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">色彩体系 —— 主题色板</h2><span class="gallery-section__spec">§2.1</span></div>
+              <div class="gallery-section__body">
+                <div class="gallery-row" id="themeColorSwatches"></div>
+              </div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">功能状态色 / 文字色</h2><span class="gallery-section__spec">§2.2 · §2.3</span></div>
+              <div class="gallery-section__body">
+                <div class="gallery-row"><span class="gallery-row__label">状态色</span><div class="gallery-row__content" id="semanticColorSwatches"></div></div>
+                <div class="gallery-row"><span class="gallery-row__label">文字色</span><div class="gallery-row__content" id="textColorSwatches"></div></div>
+              </div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">状态提示三件套（唯一权威源）</h2><span class="gallery-section__spec">§2.9</span></div>
+              <div class="gallery-section__body"><div class="gallery-row" id="statusTripleSwatches"></div></div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Button 按钮</h2><span class="gallery-section__spec">§5.1</span></div>
+              <div class="gallery-section__body">
+                <div class="gallery-row"><span class="gallery-row__label">8 种类型</span><div class="gallery-row__content">
+                  <button class="bc-btn bc-btn--primary bc-btn--medium">Primary</button>
+                  <button class="bc-btn bc-btn--secondary bc-btn--medium">Secondary</button>
+                  <button class="bc-btn bc-btn--gray bc-btn--medium">Gray</button>
+                  <button class="bc-btn bc-btn--danger bc-btn--medium">Danger</button>
+                  <button class="bc-btn bc-btn--secondaryDanger bc-btn--medium">SecondaryDanger</button>
+                  <button class="bc-btn bc-btn--grayDanger bc-btn--medium">GrayDanger</button>
+                  <button class="bc-btn bc-btn--textPrimary bc-btn--medium">TextPrimary</button>
+                  <button class="bc-btn bc-btn--text bc-btn--medium">Text</button>
+                  <button class="bc-btn bc-btn--textTip bc-btn--medium">TextTip</button>
+                </div></div>
+                <div class="gallery-row"><span class="gallery-row__label">三档尺寸</span><div class="gallery-row__content">
+                  <button class="bc-btn bc-btn--primary bc-btn--small">Small 24</button>
+                  <button class="bc-btn bc-btn--primary bc-btn--medium">Medium 28</button>
+                  <button class="bc-btn bc-btn--primary bc-btn--large">Large 40</button>
+                </div></div>
+                <div class="gallery-row"><span class="gallery-row__label">状态</span><div class="gallery-row__content">
+                  <button class="bc-btn bc-btn--primary bc-btn--medium" disabled>Disabled</button>
+                  <button class="bc-btn bc-btn--primary bc-btn--medium bc-btn--icon-only" id="galleryLoadingBtn">
+                    <svg width="14" height="14" viewBox="0 0 1024 1024" fill="currentColor"><path d="M512 128a48 48 0 0 1 48 48v288h288a48 48 0 0 1 0 96H560v288a48 48 0 0 1-96 0V560H176a48 48 0 0 1 0-96h288V176a48 48 0 0 1 48-48z"/></svg>
+                  </button>
+                </div></div>
+              </div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Input 输入框 / Form 表单</h2><span class="gallery-section__spec">§5.2 · §5.3</span></div>
+              <div class="gallery-section__body">
+                <div class="gallery-row"><span class="gallery-row__label">基础</span><div class="gallery-row__content">
+                  <span class="bc-input-wrap" style="width:200px;"><input class="bc-input" placeholder="请输入内容" /></span>
+                  <span class="bc-input-wrap" style="width:200px;"><input class="bc-input" value="Beast Core" /></span>
+                </div></div>
+                <div class="gallery-row"><span class="gallery-row__label">状态</span><div class="gallery-row__content">
+                  <span class="bc-input-wrap" style="width:200px;"><input class="bc-input" placeholder="禁用态" disabled /></span>
+                  <span class="bc-input-wrap bc-input-wrap--error" style="width:200px;"><input class="bc-input" placeholder="错误态" /></span>
+                </div></div>
+                <div class="gallery-row"><span class="gallery-row__label">多行</span><div class="gallery-row__content">
+                  <textarea class="bc-textarea" style="width:320px;" placeholder="TextArea 多行文本" rows="3"></textarea>
+                </div></div>
+                <div class="gallery-row"><span class="gallery-row__label">Form 示例</span><div class="gallery-row__content">
+                  <div class="bc-form-item" style="width:320px;">
+                    <label class="bc-form-item__label"><span class="bc-form-item__required">*</span>表单项</label>
+                    <div class="bc-form-item__content"><span class="bc-input-wrap"><input class="bc-input" placeholder="Label 宽度 104px" /></span></div>
+                  </div>
+                </div></div>
+              </div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Select 下拉选择器</h2><span class="gallery-section__spec">§5.4</span></div>
+              <div class="gallery-section__body">
+                <div class="gallery-row"><span class="gallery-row__label">单选</span><div class="gallery-row__content" id="gallerySelectSingle" style="width:200px;"></div></div>
+                <div class="gallery-row"><span class="gallery-row__label">多选</span><div class="gallery-row__content" id="gallerySelectMulti" style="width:260px;"></div></div>
+              </div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Checkbox / Radio</h2><span class="gallery-section__spec">§5.5</span></div>
+              <div class="gallery-section__body">
+                <div class="gallery-row"><span class="gallery-row__label">Checkbox</span><div class="gallery-row__content">
+                  <label class="bc-checkbox checked"><input type="checkbox" checked /><span class="bc-checkbox__box"><svg class="chk" viewBox="0 0 1024 1024" width="10" height="10" fill="none"><path d="M180 540 400 750 844 280" stroke="#fff" stroke-width="110" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>已选中</span></label>
+                  <label class="bc-checkbox"><input type="checkbox" /><span class="bc-checkbox__box"></span><span>未选中</span></label>
+                  <label class="bc-checkbox indeterminate"><input type="checkbox" /><span class="bc-checkbox__box"><span class="bc-checkbox__indeterminate-bar"></span></span><span>半选中</span></label>
+                  <label class="bc-checkbox disabled"><input type="checkbox" disabled /><span class="bc-checkbox__box"></span><span>禁用</span></label>
+                </div></div>
+                <div class="gallery-row"><span class="gallery-row__label">Radio 默认</span><div class="gallery-row__content">
+                  <div class="bc-radio-group">
+                    <label class="bc-radio checked"><input type="radio" name="galleryRadio" checked /><span class="bc-radio__circle"><span class="bc-radio__dot"></span></span><span>选项一</span></label>
+                    <label class="bc-radio"><input type="radio" name="galleryRadio" /><span class="bc-radio__circle"><span class="bc-radio__dot"></span></span><span>选项二</span></label>
+                  </div>
+                </div></div>
+                <div class="gallery-row"><span class="gallery-row__label">Radio 按钮组</span><div class="gallery-row__content">
+                  <div class="bc-radio-group bc-radio-group--buttonGhost">
+                    <button class="bc-radio-btn active" type="button">幽灵态</button>
+                    <button class="bc-radio-btn" type="button">选中态</button>
+                    <button class="bc-radio-btn" type="button">第三项</button>
+                  </div>
+                </div></div>
+              </div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Switch 开关</h2><span class="gallery-section__spec">§5.6</span></div>
+              <div class="gallery-section__body"><div class="gallery-row"><div class="gallery-row__content">
+                <span class="bc-switch checked" id="gallerySwitch1"><span class="bc-switch__dot"></span></span>
+                <span class="bc-switch" id="gallerySwitch2"><span class="bc-switch__dot"></span></span>
+                <span class="bc-switch checked disabled"><span class="bc-switch__dot"></span></span>
+                <span class="bc-switch disabled"><span class="bc-switch__dot"></span></span>
+                <span class="bc-switch bc-switch--small checked" id="gallerySwitch3"><span class="bc-switch__dot"></span></span>
+              </div></div></div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Tag 标签</h2><span class="gallery-section__spec">§5.7</span></div>
+              <div class="gallery-section__body"><div class="gallery-row"><div class="gallery-row__content">
+                <span class="bc-tag bc-tag--info">info 信息</span>
+                <span class="bc-tag bc-tag--warn">warn 提醒</span>
+                <span class="bc-tag bc-tag--danger">danger 警告</span>
+                <span class="bc-tag bc-tag--success">success 成功</span>
+                <span class="bc-tag bc-tag--fail">fail 失败</span>
+                <span class="bc-tag bc-tag--gray">gray 中性</span>
+                <span class="bc-tag bc-tag--info"><span class="bc-tag__dot"></span>带圆点</span>
+                <span class="bc-tag bc-tag--warn" id="closableTag">可关闭<button class="bc-tag__close" id="closableTagBtn"><svg width="8" height="8" viewBox="0 0 1024 1024" fill="currentColor"><path d="M512 465.1 761.6 215.5a33.2 33.2 0 0 1 47 47L559 512l249.6 249.5a33.2 33.2 0 1 1-47 47L512 558.9 262.5 808.5a33.2 33.2 0 1 1-47-47L465 512 215.5 262.5a33.2 33.2 0 1 1 47-47L512 465.1z"/></svg></button></span>
+              </div></div></div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Badge 徽标数</h2><span class="gallery-section__spec">§5.8</span></div>
+              <div class="gallery-section__body"><div class="gallery-row"><div class="gallery-row__content">
+                <span class="bc-badge-wrap"><span class="gallery-badge-anchor">消息</span><span class="bc-badge">5</span></span>
+                <span class="bc-badge-wrap"><span class="gallery-badge-anchor">通知</span><span class="bc-badge">99+</span></span>
+                <span class="bc-badge-wrap"><span class="gallery-badge-anchor">超限</span><span class="bc-badge">999+</span></span>
+                <span class="bc-badge-wrap"><span class="gallery-badge-anchor">圆点</span><span class="bc-badge bc-badge--dot"></span></span>
+              </div></div></div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Card 卡片</h2><span class="gallery-section__spec">§5.9</span></div>
+              <div class="gallery-section__body"><div class="gallery-row"><div class="gallery-row__content">
+                <div class="bc-card" style="width:200px;"><div class="bc-card__header">卡片标题</div><div class="bc-card__body">普通直角卡片，边框 1px solid #dbdbdb。</div></div>
+                <div class="bc-card selected" style="width:200px;">
+                  <span class="bc-card__checked-triangle"><svg class="bc-card__checked-icon" width="12" height="12" viewBox="0 0 1024 1024" fill="currentColor"><path d="M877 233.3a44.8 44.8 0 0 1 4 63.2L433.5 800a44.8 44.8 0 0 1-64.6 1.6L143.6 576.3a44.8 44.8 0 1 1 63.4-63.3l191.6 191.6L813.8 237.3a44.8 44.8 0 0 1 63.2-4z"/></svg></span>
+                  <div class="bc-card__header">选中态卡片</div><div class="bc-card__body">右上角三角勾选标，边框变主题蓝。</div>
+                </div>
+              </div></div></div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Table 表格</h2><span class="gallery-section__spec">§5.10</span></div>
+              <div class="gallery-section__body">
+                <div class="bc-table-wrap"><table class="bc-table" style="min-width:0;">
+                  <thead><tr><th>ID</th><th>名称</th><th>状态</th></tr></thead>
+                  <tbody>
+                    <tr><td>D-001</td><td>示例数据行 A</td><td><span class="bc-tag bc-tag--success">成功</span></td></tr>
+                    <tr><td>D-002</td><td>示例数据行 B</td><td><span class="bc-tag bc-tag--warn">待处理</span></td></tr>
+                  </tbody>
+                </table></div>
+              </div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Modal 弹窗</h2><span class="gallery-section__spec">§5.11</span></div>
+              <div class="gallery-section__body"><div class="gallery-row"><div class="gallery-row__content">
+                <button class="bc-btn bc-btn--primary bc-btn--medium" id="galleryModalBtn">打开 Modal</button>
+              </div></div></div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Toast 消息</h2><span class="gallery-section__spec">§5.12</span></div>
+              <div class="gallery-section__body"><div class="gallery-row"><div class="gallery-row__content">
+                <button class="bc-btn bc-btn--gray bc-btn--medium" data-toast="success">Success Toast</button>
+                <button class="bc-btn bc-btn--gray bc-btn--medium" data-toast="warn">Warn Toast</button>
+                <button class="bc-btn bc-btn--gray bc-btn--medium" data-toast="error">Error Toast</button>
+                <button class="bc-btn bc-btn--gray bc-btn--medium" data-toast="info">Info Toast</button>
+              </div></div></div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Tooltip / Popover</h2><span class="gallery-section__spec">§5.13</span></div>
+              <div class="gallery-section__body"><div class="gallery-row"><div class="gallery-row__content">
+                <span class="bc-tooltip-wrap hover-demo"><button class="bc-btn bc-btn--gray bc-btn--medium">Hover 查看 Tooltip</button><span class="bc-tooltip">这是一个 Tooltip 提示</span></span>
+                <span class="bc-popover-wrap" id="galleryPopoverHover">
+                  <button class="bc-btn bc-btn--gray bc-btn--medium">Hover 查看 Popover</button>
+                  <div class="bc-popover"><span class="bc-popover__title">Popover 标题</span><span class="bc-popover__content">Popover 内容说明文字</span></div>
+                </span>
+                <span class="bc-popover-wrap">
+                  <button class="bc-btn bc-btn--secondaryDanger bc-btn--medium" id="galleryConfirmPopoverBtn">Click 确认型 Popover</button>
+                  <div class="bc-popover bc-popover--confirm" id="galleryConfirmPopover">
+                    <span class="bc-popover__title">操作确认</span>
+                    <span class="bc-popover__content">确定要执行该操作吗？</span>
+                    <span class="bc-popover__actions">
+                      <button class="bc-btn bc-btn--gray bc-btn--small" data-popover-cancel>取消</button>
+                      <button class="bc-btn bc-btn--primary bc-btn--small" id="galleryConfirmPopoverOk">确定</button>
+                    </span>
+                  </div>
+                </span>
+              </div></div></div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Progress 进度条</h2><span class="gallery-section__spec">§5.14</span></div>
+              <div class="gallery-section__body">
+                <div class="gallery-row"><span class="gallery-row__label">线性</span><div class="gallery-row__content" id="galleryProgressLine" style="gap:24px;"></div></div>
+                <div class="gallery-row"><span class="gallery-row__label">环形</span><div class="gallery-row__content" id="galleryProgressCircle"></div></div>
+              </div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Spin 加载中</h2><span class="gallery-section__spec">§5.15</span></div>
+              <div class="gallery-section__body"><div class="gallery-row"><div class="gallery-row__content">
+                <button class="bc-btn bc-btn--gray bc-btn--medium" id="gallerySpinBtn">触发区域加载</button>
+                <div class="bc-spin-container">
+                  <div class="gallery-spin-demo">加载区域内容占位</div>
+                  <div class="bc-spin-mask" id="gallerySpinMask"><div class="bc-spin__content"><svg class="bc-icon-spin" width="28" height="28" viewBox="0 0 1024 1024" fill="currentColor"><path d="M512 42.7a45.3 45.3 0 0 1 45.3 45.3v128a45.3 45.3 0 1 1-90.6 0V88a45.3 45.3 0 0 1 45.3-45.3z"/><path opacity=".35" d="M512 42.7a469.3 469.3 0 1 1-332 795.8 45.3 45.3 0 1 1 64-64A378.7 378.7 0 1 0 512 133.3z"/></svg></div></div>
+                </div>
+              </div></div></div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Tab 选项卡</h2><span class="gallery-section__spec">§5.16</span></div>
+              <div class="gallery-section__body">
+                <div class="gallery-row"><span class="gallery-row__label">line 线性</span><div class="gallery-row__content">
+                  <div class="bc-tabs bc-tabs--line demo-tabs"><button class="bc-tabs__item active">一级标签</button><button class="bc-tabs__item">标签二</button><button class="bc-tabs__item">标签三</button></div>
+                </div></div>
+                <div class="gallery-row"><span class="gallery-row__label">card 卡片型</span><div class="gallery-row__content">
+                  <div class="bc-tabs bc-tabs--card demo-tabs"><button class="bc-tabs__item active">卡片一</button><button class="bc-tabs__item">卡片二</button></div>
+                </div></div>
+                <div class="gallery-row"><span class="gallery-row__label">capsule 胶囊型</span><div class="gallery-row__content">
+                  <div class="bc-tabs bc-tabs--capsule demo-tabs"><button class="bc-tabs__item active">胶囊一</button><button class="bc-tabs__item">胶囊二</button></div>
+                </div></div>
+                <div class="gallery-row"><span class="gallery-row__label">reunit 等分型</span><div class="gallery-row__content" style="width:320px;">
+                  <div class="bc-tabs bc-tabs--reunit demo-tabs"><button class="bc-tabs__item active">等分一</button><button class="bc-tabs__item">等分二</button></div>
+                </div></div>
+              </div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Pagination 分页</h2><span class="gallery-section__spec">§5.17</span></div>
+              <div class="gallery-section__body"><div class="bc-pagination" id="galleryPagination"></div></div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Step 步骤条</h2><span class="gallery-section__spec">§5.18</span></div>
+              <div class="gallery-section__body">
+                <div class="bc-steps">
+                  <div class="bc-step finish"><div class="bc-step__icon"><svg width="12" height="12" viewBox="0 0 1024 1024" fill="currentColor"><path d="M877 233.3a44.8 44.8 0 0 1 4 63.2L433.5 800a44.8 44.8 0 0 1-64.6 1.6L143.6 576.3a44.8 44.8 0 1 1 63.4-63.3l191.6 191.6L813.8 237.3a44.8 44.8 0 0 1 63.2-4z"/></svg></div><div><div class="bc-step__title">提交申请</div><div class="bc-step__desc">填写基础信息</div></div><div class="bc-step__line"></div></div>
+                  <div class="bc-step process"><div class="bc-step__icon">2</div><div><div class="bc-step__title">资料审核</div><div class="bc-step__desc">等待审核人处理</div></div><div class="bc-step__line"></div></div>
+                  <div class="bc-step wait"><div class="bc-step__icon">3</div><div><div class="bc-step__title">审核通过</div><div class="bc-step__desc">完成流程</div></div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Breadcrumb / Dropdown / Menu</h2><span class="gallery-section__spec">§5.19</span></div>
+              <div class="gallery-section__body">
+                <div class="gallery-row"><span class="gallery-row__label">Breadcrumb</span><div class="gallery-row__content">
+                  <nav class="bc-breadcrumb"><span class="bc-breadcrumb__item">首页</span><span class="bc-breadcrumb__sep">/</span><span class="bc-breadcrumb__item">任务管理</span><span class="bc-breadcrumb__sep">/</span><span class="bc-breadcrumb__current">任务详情</span></nav>
+                </div></div>
+                <div class="gallery-row"><span class="gallery-row__label">Dropdown</span><div class="gallery-row__content">
+                  <div class="bc-dropdown-wrap">
+                    <button class="bc-btn bc-btn--gray bc-btn--medium" id="galleryDropdownBtn">点击展开菜单</button>
+                    <ul class="bc-dropdown-menu bc-dropdown-menu--left" id="galleryDropdownMenu">
+                      <li class="bc-dropdown-menu__item">菜单项一</li>
+                      <li class="bc-dropdown-menu__item">菜单项二</li>
+                      <li class="bc-dropdown-menu__item bc-dropdown-menu__item--danger">危险操作</li>
+                    </ul>
+                  </div>
+                </div></div>
+                <div class="gallery-row"><span class="gallery-row__label">Menu</span><div class="gallery-row__content">
+                  <div class="gallery-menu-demo">
+                    <ul class="bc-menu" id="galleryMenuDemo">
+                      <li class="bc-menu__item active"><span class="bc-menu__indicator"></span><span class="bc-menu__label">菜单项 A</span></li>
+                      <li class="bc-menu__item"><span class="bc-menu__indicator"></span><span class="bc-menu__label">菜单项 B</span></li>
+                      <li class="bc-menu__item"><span class="bc-menu__indicator"></span><span class="bc-menu__label">菜单项 C</span></li>
+                    </ul>
+                  </div>
+                </div></div>
+              </div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Drawer / Collapse / Divider</h2><span class="gallery-section__spec">§5.20</span></div>
+              <div class="gallery-section__body">
+                <div class="gallery-row"><span class="gallery-row__label">Drawer</span><div class="gallery-row__content">
+                  <button class="bc-btn bc-btn--gray bc-btn--medium" id="galleryDrawerBtn">打开 Drawer</button>
+                </div></div>
+                <div class="gallery-row"><span class="gallery-row__label">Collapse</span><div class="gallery-row__content" style="width:320px;">
+                  <div class="bc-collapse" id="galleryCollapse">
+                    <div class="bc-collapse__panel open">
+                      <div class="bc-collapse__header"><svg class="bc-collapse__arrow" width="12" height="12" viewBox="0 0 1024 1024" fill="currentColor"><path d="M512 646.4 233.6 368a51.2 51.2 0 0 0-72.4 72.4l314.5 314.5a45.7 45.7 0 0 0 64.6 0l314.5-314.5a51.2 51.2 0 0 0-72.4-72.4L512 646.4z"/></svg><span>面板一</span></div>
+                      <div class="bc-collapse__content">面板高 44px，容器背景 #fafafa。</div>
+                    </div>
+                    <div class="bc-collapse__panel">
+                      <div class="bc-collapse__header"><svg class="bc-collapse__arrow" width="12" height="12" viewBox="0 0 1024 1024" fill="currentColor"><path d="M512 646.4 233.6 368a51.2 51.2 0 0 0-72.4 72.4l314.5 314.5a45.7 45.7 0 0 0 64.6 0l314.5-314.5a51.2 51.2 0 0 0-72.4-72.4L512 646.4z"/></svg><span>面板二</span></div>
+                      <div class="bc-collapse__content">展开/收起带箭头旋转动效。</div>
+                    </div>
+                  </div>
+                </div></div>
+                <div class="gallery-row"><span class="gallery-row__label">Divider</span><div class="gallery-row__content" style="width:320px; display:block;">
+                  <div class="bc-divider"></div>
+                  <div class="bc-divider-text-wrap"><span class="bc-divider"></span><span class="bc-divider-text">分割文字</span><span class="bc-divider"></span></div>
+                  水平<span class="bc-divider--vertical"></span>垂直
+                </div></div>
+              </div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">Grid / Space / Box</h2><span class="gallery-section__spec">§5.21</span></div>
+              <div class="gallery-section__body">
+                <div class="gallery-row"><span class="gallery-row__label">Grid</span><div class="gallery-row__content" style="width:400px;">
+                  <div class="bc-row"><div class="bc-col" style="width:33.33%;"><div class="gallery-grid-block">span=8</div></div><div class="bc-col" style="width:33.33%;"><div class="gallery-grid-block">span=8</div></div><div class="bc-col" style="width:33.33%;"><div class="gallery-grid-block">span=8</div></div></div>
+                </div></div>
+                <div class="gallery-row"><span class="gallery-row__label">Space</span><div class="gallery-row__content">
+                  <div class="bc-space"><button class="bc-btn bc-btn--gray bc-btn--small">A</button><button class="bc-btn bc-btn--gray bc-btn--small">B</button><button class="bc-btn bc-btn--gray bc-btn--small">C</button></div>
+                </div></div>
+              </div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">NoticeBar 通告栏</h2><span class="gallery-section__spec">§5.22</span></div>
+              <div class="gallery-section__body">
+                <div class="bc-notice-bar bc-notice-bar--info"><svg width="16" height="16" viewBox="0 0 1024 1024" fill="currentColor"><circle cx="512" cy="512" r="470"/><circle cx="512" cy="326" r="56" fill="#fff"/><rect x="456" y="440" width="112" height="330" rx="24" fill="#fff"/></svg><span class="bc-notice-bar__content">信息类通告 —— 浅底 #e6f6ff + 边框 #a3daff</span></div>
+                <div class="bc-notice-bar bc-notice-bar--warn" id="galleryNoticeWarn"><svg width="16" height="16" viewBox="0 0 1024 1024" fill="currentColor"><circle cx="512" cy="512" r="470"/><rect x="456" y="220" width="112" height="380" rx="24" fill="#fff"/><circle cx="512" cy="722" r="56" fill="#fff"/></svg><span class="bc-notice-bar__content">警告类通告 —— 浅底 #fff6e6 + 边框 #ffdaa3</span><button class="bc-notice-bar__close" id="galleryNoticeWarnClose"><svg width="12" height="12" viewBox="0 0 1024 1024" fill="currentColor"><path d="M512 465.1 761.6 215.5a33.2 33.2 0 0 1 47 47L559 512l249.6 249.5a33.2 33.2 0 1 1-47 47L512 558.9 262.5 808.5a33.2 33.2 0 1 1-47-47L465 512 215.5 262.5a33.2 33.2 0 1 1 47-47L512 465.1z"/></svg></button></div>
+                <div class="bc-notice-bar bc-notice-bar--error"><svg width="16" height="16" viewBox="0 0 1024 1024" fill="currentColor"><circle cx="512" cy="512" r="470"/><rect x="472" y="290" width="80" height="444" rx="20" fill="#fff" transform="rotate(45 512 512)"/><rect x="472" y="290" width="80" height="444" rx="20" fill="#fff" transform="rotate(-45 512 512)"/></svg><span class="bc-notice-bar__content">错误类通告 —— 浅底 #ffeae6 + 边框 #ffbdb3</span></div>
+                <div class="bc-notice-bar bc-notice-bar--success"><svg width="16" height="16" viewBox="0 0 1024 1024" fill="currentColor"><circle cx="512" cy="512" r="470"/><path d="M300 520 458 668 740 366" stroke="#fff" stroke-width="72" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><span class="bc-notice-bar__content">成功类通告 —— 浅底 #e3fae1 + 边框 #9bed98</span></div>
+              </div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">DatePicker / RangePicker</h2><span class="gallery-section__spec">§5.23</span></div>
+              <div class="gallery-section__body"><div class="gallery-row"><div class="gallery-row__content">
+                <div id="galleryDatePickerMount" style="width:200px;"></div>
+                <div id="galleryRangePickerMount" style="width:280px;"></div>
+              </div></div></div>
+            </div>
+
+            <div class="gallery-section">
+              <div class="gallery-section__header"><h2 class="gallery-section__title">层级 z-index 体系</h2><span class="gallery-section__spec">§6</span></div>
+              <div class="gallery-section__body">
+                <table class="gallery-zindex-table">
+                  <thead><tr><th>组件</th><th>z-index</th></tr></thead>
+                  <tbody>
+                    <tr><td>BackTop 回到顶部</td><td>10</td></tr>
+                    <tr><td>Table 固定列/表头</td><td>100</td></tr>
+                    <tr><td>Select 下拉面板</td><td>101</td></tr>
+                    <tr><td>Spin 加载遮罩 / Preview 预览</td><td>999</td></tr>
+                    <tr><td>Modal 弹窗 + 遮罩</td><td>1000</td></tr>
+                    <tr><td>Toast 消息 / Notification 通知</td><td>1010</td></tr>
+                    <tr><td>Popover 气泡 / Portal 通用浮层</td><td>1030</td></tr>
+                    <tr><td>Dropdown 下拉菜单</td><td>1050</td></tr>
+                    <tr><td>Tooltip 提示</td><td>1060</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ 全局 Modal §5.11 ============ -->
+<div class="bc-modal-mask" id="taskModalMask">
+  <div class="bc-modal" style="width:640px;">
+    <div class="bc-modal__header">
+      <span id="taskModalTitle">新建任务</span>
+      <button class="bc-modal__close" id="taskModalClose">
+        <svg width="16" height="16" viewBox="0 0 1024 1024" fill="currentColor"><path d="M512 465.1 761.6 215.5a33.2 33.2 0 0 1 47 47L559 512l249.6 249.5a33.2 33.2 0 1 1-47 47L512 558.9 262.5 808.5a33.2 33.2 0 1 1-47-47L465 512 215.5 262.5a33.2 33.2 0 1 1 47-47L512 465.1z"/></svg>
+      </button>
+    </div>
+    <div class="bc-modal__body">
+      <div class="create-task__templates" id="taskModalTemplates">
+        <div class="create-task__templates-label">选择任务模板</div>
+        <div class="bc-space" id="templateCards"></div>
+      </div>
+      <form id="taskForm">
+        <div class="bc-form-item" id="taskNameFormItem" style="margin-bottom:16px;">
+          <label class="bc-form-item__label"><span class="bc-form-item__required">*</span>任务名称</label>
+          <div class="bc-form-item__content">
+            <span class="bc-input-wrap"><input class="bc-input" id="taskNameInput" placeholder="请输入任务名称，简要描述任务目标" /></span>
+            <div class="bc-form-item__error-text" id="taskNameError" style="display:none;">请输入任务名称</div>
+          </div>
+        </div>
+        <div class="bc-form-item" style="margin-bottom:16px;">
+          <label class="bc-form-item__label"><span class="bc-form-item__required">*</span>所属项目</label>
+          <div class="bc-form-item__content" id="projectSelectMount"></div>
+        </div>
+        <div class="bc-form-item" style="margin-bottom:16px;">
+          <label class="bc-form-item__label"><span class="bc-form-item__required">*</span>负责人</label>
+          <div class="bc-form-item__content" id="taskOwnerSelectMount"></div>
+        </div>
+        <div class="bc-form-item" style="margin-bottom:16px;">
+          <label class="bc-form-item__label"><span class="bc-form-item__required">*</span>优先级</label>
+          <div class="bc-form-item__content">
+            <div class="bc-radio-group bc-radio-group--buttonGhost" id="taskPriorityRadio">
+              <button class="bc-radio-btn" type="button" data-value="urgent">紧急</button>
+              <button class="bc-radio-btn" type="button" data-value="high">高</button>
+              <button class="bc-radio-btn active" type="button" data-value="normal">中</button>
+              <button class="bc-radio-btn" type="button" data-value="low">低</button>
+            </div>
+          </div>
+        </div>
+        <div class="bc-form-item" style="margin-bottom:16px;">
+          <label class="bc-form-item__label">截止日期</label>
+          <div class="bc-form-item__content" id="taskDueDateMount" style="width:220px;"></div>
+        </div>
+        <div class="bc-form-item" style="margin-bottom:16px;">
+          <label class="bc-form-item__label">任务描述</label>
+          <div class="bc-form-item__content"><textarea class="bc-textarea" id="taskDescInput" rows="4" placeholder="补充任务背景、验收标准等信息"></textarea></div>
+        </div>
+        <div class="bc-form-item">
+          <label class="bc-form-item__label">自动跟踪进度</label>
+          <div class="bc-form-item__content"><span class="bc-switch checked" id="taskAutoTrackSwitch"><span class="bc-switch__dot"></span></span></div>
+        </div>
+      </form>
+    </div>
+    <div class="bc-modal__footer">
+      <button class="bc-btn bc-btn--gray bc-btn--medium" id="taskModalCancel">取消</button>
+      <button class="bc-btn bc-btn--primary bc-btn--medium" id="taskModalOk">创建</button>
+    </div>
+  </div>
+</div>
+
+<div class="bc-modal-mask" id="galleryModalMask">
+  <div class="bc-modal" style="width:480px;">
+    <div class="bc-modal__header">示例弹窗<button class="bc-modal__close" id="galleryModalClose"><svg width="16" height="16" viewBox="0 0 1024 1024" fill="currentColor"><path d="M512 465.1 761.6 215.5a33.2 33.2 0 0 1 47 47L559 512l249.6 249.5a33.2 33.2 0 1 1-47 47L512 558.9 262.5 808.5a33.2 33.2 0 1 1-47-47L465 512 215.5 262.5a33.2 33.2 0 1 1 47-47L512 465.1z"/></svg></button></div>
+    <div class="bc-modal__body">最小宽 320px，圆角 6px，header padding 8px 12px，body padding 24px 24px 20px。</div>
+    <div class="bc-modal__footer"><button class="bc-btn bc-btn--gray bc-btn--medium" id="galleryModalCancel">取消</button><button class="bc-btn bc-btn--primary bc-btn--medium" id="galleryModalOk">确定</button></div>
+  </div>
+</div>
+
+<!-- ============ 全局 Drawer §5.20 / §9.5 ============ -->
+<div class="bc-drawer-mask" id="taskDrawerMask">
+  <div class="bc-drawer">
+    <div class="bc-drawer__header">
+      <span id="taskDrawerTitle">任务详情</span>
+      <button class="bc-drawer__close" id="taskDrawerClose">
+        <svg width="16" height="16" viewBox="0 0 1024 1024" fill="currentColor"><path d="M512 465.1 761.6 215.5a33.2 33.2 0 0 1 47 47L559 512l249.6 249.5a33.2 33.2 0 1 1-47 47L512 558.9 262.5 808.5a33.2 33.2 0 1 1-47-47L465 512 215.5 262.5a33.2 33.2 0 1 1 47-47L512 465.1z"/></svg>
+      </button>
+    </div>
+    <div class="bc-drawer__body" id="taskDrawerBody"></div>
+    <div class="bc-drawer__footer">
+      <button class="bc-btn bc-btn--gray bc-btn--medium" id="taskDrawerCloseBtn">关闭</button>
+      <button class="bc-btn bc-btn--primary bc-btn--medium" id="taskDrawerEditBtn">前往编辑</button>
+    </div>
+  </div>
+</div>
+
+<div class="bc-drawer-mask" id="galleryDrawerMask">
+  <div class="bc-drawer" style="width:420px;">
+    <div class="bc-drawer__header">示例抽屉<button class="bc-drawer__close" id="galleryDrawerClose"><svg width="16" height="16" viewBox="0 0 1024 1024" fill="currentColor"><path d="M512 465.1 761.6 215.5a33.2 33.2 0 0 1 47 47L559 512l249.6 249.5a33.2 33.2 0 1 1-47 47L512 558.9 262.5 808.5a33.2 33.2 0 1 1-47-47L465 512 215.5 262.5a33.2 33.2 0 1 1 47-47L512 465.1z"/></svg></button></div>
+    <div class="bc-drawer__body">从右侧滑入，遮罩 rgba(0,0,0,.4)。</div>
+  </div>
+</div>
+
+<!-- ============ 全局 Toast §5.12 ============ -->
+<div class="bc-toast-container" id="toastContainer"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ========================================================================
+     图标
+     ==================================================================== */
+  var ICONS = {
+    infoCircle: '<svg width="{s}" height="{s}" viewBox="0 0 1024 1024" fill="currentColor"><circle cx="512" cy="512" r="470"/><circle cx="512" cy="326" r="56" fill="#fff"/><rect x="456" y="440" width="112" height="330" rx="24" fill="#fff"/></svg>',
+    warnCircle: '<svg width="{s}" height="{s}" viewBox="0 0 1024 1024" fill="currentColor"><circle cx="512" cy="512" r="470"/><rect x="456" y="220" width="112" height="380" rx="24" fill="#fff"/><circle cx="512" cy="722" r="56" fill="#fff"/></svg>',
+    errorCircle: '<svg width="{s}" height="{s}" viewBox="0 0 1024 1024" fill="currentColor"><circle cx="512" cy="512" r="470"/><rect x="472" y="290" width="80" height="444" rx="20" fill="#fff" transform="rotate(45 512 512)"/><rect x="472" y="290" width="80" height="444" rx="20" fill="#fff" transform="rotate(-45 512 512)"/></svg>',
+    successCircle: '<svg width="{s}" height="{s}" viewBox="0 0 1024 1024" fill="currentColor"><circle cx="512" cy="512" r="470"/><path d="M300 520 458 668 740 366" stroke="#fff" stroke-width="72" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
+    down: '<svg width="{s}" height="{s}" viewBox="0 0 1024 1024" fill="currentColor"><path d="M512 646.4 233.6 368a51.2 51.2 0 0 0-72.4 72.4l314.5 314.5a45.7 45.7 0 0 0 64.6 0l314.5-314.5a51.2 51.2 0 0 0-72.4-72.4L512 646.4z"/></svg>',
+    left: '<svg width="{s}" height="{s}" viewBox="0 0 1024 1024" fill="currentColor"><path d="M646.4 233.6 368 512l278.4 278.4a51.2 51.2 0 1 1-72.4 72.4L259.5 548.3a45.7 45.7 0 0 1 0-64.6l314.5-314.5a51.2 51.2 0 0 1 72.4 72.4z"/></svg>',
+    right: '<svg width="{s}" height="{s}" viewBox="0 0 1024 1024" fill="currentColor"><path d="M377.6 233.6 656 512l-278.4 278.4a51.2 51.2 0 1 0 72.4 72.4l314.5-314.5a45.7 45.7 0 0 0 0-64.6L450 161.2a51.2 51.2 0 1 0-72.4 72.4z"/></svg>',
+    calendar: '<svg width="{s}" height="{s}" viewBox="0 0 1024 1024" fill="currentColor"><path d="M320 80a40 40 0 0 1 40 40v40h304v-40a40 40 0 0 1 80 0v40h64a96 96 0 0 1 96 96v544a96 96 0 0 1-96 96H216a96 96 0 0 1-96-96V256a96 96 0 0 1 96-96h64v-40a40 40 0 0 1 40-40zM200 420v380a16 16 0 0 0 16 16h592a16 16 0 0 0 16-16V420H200z"/></svg>',
+    more: '<svg width="{s}" height="{s}" viewBox="0 0 1024 1024" fill="currentColor"><circle cx="200" cy="512" r="72"/><circle cx="512" cy="512" r="72"/><circle cx="824" cy="512" r="72"/></svg>',
+    check: '<svg width="{s}" height="{s}" viewBox="0 0 1024 1024" fill="currentColor"><path d="M877 233.3a44.8 44.8 0 0 1 4 63.2L433.5 800a44.8 44.8 0 0 1-64.6 1.6L143.6 576.3a44.8 44.8 0 1 1 63.4-63.3l191.6 191.6L813.8 237.3a44.8 44.8 0 0 1 63.2-4z"/></svg>'
+  };
+  function icon(name, size) {
+    size = size || 14;
+    return (ICONS[name] || '').split('{s}').join(size);
+  }
+
+  /* ========================================================================
+     Mock 数据
+     ==================================================================== */
+  var OWNERS = ['林晓雯', '陈志远', '黄佳怡', '王思远', '赵梦琪', '刘子豪'];
+  var PROJECTS = ['OMS 商品域', '供应链协同', '风控合规', '数据中台', '增长营销'];
+  var NAMES = [
+    '梳理商品审核规则文档', '修复库存同步偶发延迟问题', '设计任务管理列表页高保真原型', '接入新版物流轨迹回调',
+    '优化搜索召回排序策略', '编写 Q3 复盘周报', '排查支付对账差异', '完成多语言翻译校对',
+    '搭建灰度发布流水线', '评审商家入驻新流程', '补齐单元测试覆盖率', '整理设计规范 Token 附录',
+    '开展半托管商品质检抽查', '跟进竞品比价数据接入', '完善售后退款自动化规则', '制定双十一大促值班表',
+    '归档历史批次任务日志', '收敛异常仓库预警名单'
+  ];
+  var PRIORITY_MAP = {
+    urgent: { label: '紧急', tag: 'danger' },
+    high: { label: '高', tag: 'warn' },
+    normal: { label: '中', tag: 'info' },
+    low: { label: '低', tag: 'gray' }
+  };
+  var STATUS_MAP = {
+    pending: { label: '待处理', tag: 'info' },
+    processing: { label: '进行中', tag: 'warn' },
+    reviewing: { label: '待审核', tag: 'gray' },
+    done: { label: '已完成', tag: 'success' },
+    overdue: { label: '已逾期', tag: 'danger' }
+  };
+  var STATUS_KEYS = ['pending', 'processing', 'reviewing', 'done', 'overdue'];
+  var PRIORITY_KEYS = ['urgent', 'high', 'normal', 'low'];
+
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+  function generateTasks(count) {
+    var list = [];
+    for (var i = 1; i <= count; i++) {
+      var seed = i;
+      var status = STATUS_KEYS[seed % STATUS_KEYS.length];
+      var progress = status === 'done' ? 100 : status === 'overdue' ? 40 + (seed % 30) : (seed * 13) % 90;
+      list.push({
+        id: 'TSK-' + (2026000 + seed),
+        name: NAMES[seed % NAMES.length],
+        project: PROJECTS[seed % PROJECTS.length],
+        owner: OWNERS[seed % OWNERS.length],
+        priority: PRIORITY_KEYS[(seed * 3) % PRIORITY_KEYS.length],
+        status: status,
+        progress: progress,
+        autoTrack: seed % 3 !== 0,
+        dueDate: '2026-08-' + pad((seed % 27) + 1),
+        createdAt: '2026-07-' + pad((seed % 27) + 1),
+        tags: seed % 4 === 0 ? ['跨部门', '重点'] : seed % 3 === 0 ? ['常规'] : ['自动化']
+      });
+    }
+    return list;
+  }
+
+  var state = {
+    tasks: generateTasks(46),
+    businessTab: 'all',
+    filterMode: 'default',
+    statusCapsule: 'all',
+    onlyUrgent: false,
+    filters: { name: '', owners: [], priorities: [], status: '', dueFrom: '', dueTo: '' },
+    selected: {},
+    sortKey: '',
+    sortOrder: null,
+    page: 1,
+    pageSize: 10,
+    editingTaskId: null,
+    templateKey: 'blank'
+  };
+
+  /* ========================================================================
+     Toast §5.12
+     ==================================================================== */
+  var toastContainer = document.getElementById('toastContainer');
+  var toastIcons = { success: 'successCircle', warn: 'warnCircle', error: 'errorCircle', info: 'infoCircle' };
+  function showToast(type, text, duration) {
+    duration = duration || 2400;
+    var el = document.createElement('div');
+    el.className = 'bc-toast bc-toast--' + type;
+    el.innerHTML = icon(toastIcons[type], 14) + '<span class="bc-toast__text">' + text + '</span>';
+    toastContainer.appendChild(el);
+    setTimeout(function () { el.remove(); }, duration);
+  }
+
+  /* ========================================================================
+     通用：点击外部关闭
+     ==================================================================== */
+  var closers = [];
+  document.addEventListener('mousedown', function (e) {
+    closers.forEach(function (fn) { fn(e); });
+  });
+
+  /* ========================================================================
+     BcSelect —— 通用自定义下拉选择器 §5.4
+     ==================================================================== */
+  function BcSelect(mountEl, opts) {
+    this.mount = mountEl;
+    this.options = opts.options || [];
+    this.multiple = !!opts.multiple;
+    this.placeholder = opts.placeholder || '请选择';
+    this.value = opts.value !== undefined ? opts.value : (this.multiple ? [] : '');
+    this.onChange = opts.onChange || function () {};
+    this.clearable = opts.clearable !== false;
+    this.root = document.createElement('div');
+    this.root.className = 'bc-select';
+    this.mount.appendChild(this.root);
+    this.render();
+    var self = this;
+    closers.push(function (e) {
+      if (self.root && !self.root.contains(e.target)) self.close();
+    });
+  }
+  BcSelect.prototype.labelOf = function (v) {
+    for (var i = 0; i < this.options.length; i++) if (this.options[i].value === v) return this.options[i].label;
+    return v;
+  };
+  BcSelect.prototype.selectedValues = function () {
+    return this.multiple ? (this.value || []) : (this.value ? [this.value] : []);
+  };
+  BcSelect.prototype.render = function () {
+    var self = this;
+    var vals = this.selectedValues();
+    var valuesHtml = '';
+    if (vals.length === 0) {
+      valuesHtml = '<span class="bc-select__placeholder">' + this.placeholder + '</span>';
+    } else if (this.multiple) {
+      valuesHtml = vals.map(function (v) {
+        return '<span class="bc-tag bc-tag--info" data-select-tag="' + v + '">' + self.labelOf(v) +
+          '<button type="button" class="bc-tag__close" data-select-untag="' + v + '">' +
+          '<svg width="8" height="8" viewBox="0 0 1024 1024" fill="currentColor"><path d="M512 465.1 761.6 215.5a33.2 33.2 0 0 1 47 47L559 512l249.6 249.5a33.2 33.2 0 1 1-47 47L512 558.9 262.5 808.5a33.2 33.2 0 1 1-47-47L465 512 215.5 262.5a33.2 33.2 0 1 1 47-47L512 465.1z"/></svg>' +
+          '</button></span>';
+      }).join('');
+    } else {
+      valuesHtml = '<span class="bc-select__single-value">' + this.labelOf(vals[0]) + '</span>';
+    }
+    var optionsHtml = this.options.map(function (o) {
+      var active = vals.indexOf(o.value) > -1;
+      return '<li class="bc-select__option' + (active ? ' active' : '') + '" data-value="' + o.value + '">' + o.label + '</li>';
+    }).join('');
+    var clearIconSvg = '<svg width="12" height="12" viewBox="0 0 1024 1024" fill="currentColor"><path d="M512 42.7c259.1 0 469.3 210.2 469.3 469.3S771.1 981.3 512 981.3 42.7 771.1 42.7 512 252.9 42.7 512 42.7zm0 89.6C302.7 132.3 132.3 302.7 132.3 512S302.7 891.7 512 891.7 891.7 721.3 891.7 512 721.3 132.3 512 132.3zM368 336l144 144 144-144a45.3 45.3 0 0 1 64 64L576 544l144 144a45.3 45.3 0 1 1-64 64L512 608 368 752a45.3 45.3 0 1 1-64-64l144-144-144-144a45.3 45.3 0 1 1 64-64z"/></svg>';
+    this.root.className = 'bc-select' + (vals.length ? ' has-value' : '');
+    this.root.innerHTML =
+      '<div class="bc-select__control">' +
+        '<div class="bc-select__values">' + valuesHtml + '</div>' +
+        '<span class="bc-select__icons">' +
+          (this.clearable ? '<button type="button" class="bc-select__clear">' + clearIconSvg + '</button>' : '') +
+          '<span class="bc-select__arrow">' + icon('down', 12) + '</span>' +
+        '</span>' +
+      '</div>' +
+      '<div class="bc-select__panel"><ul class="bc-select__options">' + optionsHtml + '</ul></div>';
+
+    var clearBtn = this.root.querySelector('.bc-select__clear');
+    this.root.querySelector('.bc-select__control').addEventListener('click', function (e) {
+      if (e.target.closest('[data-select-untag]')) return;
+      self.toggle();
+    });
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        self.setValue(self.multiple ? [] : '');
+      });
+    }
+    this.root.querySelectorAll('.bc-select__option').forEach(function (li) {
+      li.addEventListener('click', function () {
+        var v = li.getAttribute('data-value');
+        if (self.multiple) {
+          var arr = self.selectedValues().slice();
+          var idx = arr.indexOf(v);
+          if (idx > -1) arr.splice(idx, 1); else arr.push(v);
+          self.setValue(arr);
+        } else {
+          self.setValue(v);
+          self.close();
+        }
+      });
+    });
+    this.root.querySelectorAll('[data-select-untag]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var v = btn.getAttribute('data-select-untag');
+        self.setValue(self.selectedValues().filter(function (x) { return x !== v; }));
+      });
+    });
+  };
+  BcSelect.prototype.setValue = function (v) {
+    this.value = v;
+    this.render();
+    this.onChange(v);
+  };
+  BcSelect.prototype.toggle = function () { this.root.classList.contains('open') ? this.close() : this.open(); };
+  BcSelect.prototype.open = function () { this.root.classList.add('open'); };
+  BcSelect.prototype.close = function () { this.root.classList.remove('open'); };
+
+  /* ========================================================================
+     BcDatePicker / BcRangePicker §5.23
+     ==================================================================== */
+  var WEEK_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
+  function fmtDate(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function monthMatrix(year, month) {
+    var first = new Date(year, month, 1);
+    var start = new Date(year, month, 1 - first.getDay());
+    var days = [];
+    for (var i = 0; i < 42; i++) { var d = new Date(start); d.setDate(start.getDate() + i); days.push(d); }
+    return days;
+  }
+  function renderCalendar(viewDate, selectedCheck, rangeCheck) {
+    var today = new Date();
+    var rows = monthMatrix(viewDate.getFullYear(), viewDate.getMonth());
+    var cellsHtml = rows.map(function (d) {
+      var cls = ['bc-datepicker__cell'];
+      if (d.getMonth() !== viewDate.getMonth()) cls.push('outside');
+      if (fmtDate(d) === fmtDate(today)) cls.push('today');
+      if (selectedCheck && selectedCheck(d)) cls.push('selected');
+      if (rangeCheck && rangeCheck(d)) cls.push('in-range');
+      return '<button type="button" class="' + cls.join(' ') + '" data-date="' + fmtDate(d) + '">' + d.getDate() + '</button>';
+    }).join('');
+    return (
+      '<div class="bc-datepicker__panel-header">' +
+        '<button type="button" class="bc-datepicker__nav" data-nav="-1">' + icon('left', 10) + '</button>' +
+        '<span class="bc-datepicker__panel-title">' + viewDate.getFullYear() + ' 年 ' + (viewDate.getMonth() + 1) + ' 月</span>' +
+        '<button type="button" class="bc-datepicker__nav" data-nav="1">' + icon('right', 10) + '</button>' +
+      '</div>' +
+      '<div class="bc-datepicker__weekrow">' + WEEK_LABELS.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div>' +
+      '<div class="bc-datepicker__grid">' + cellsHtml + '</div>'
+    );
+  }
+  function BcDatePicker(mountEl, opts) {
+    this.mount = mountEl;
+    this.value = opts.value || '';
+    this.placeholder = opts.placeholder || '请选择日期';
+    this.onChange = opts.onChange || function () {};
+    this.viewDate = this.value ? new Date(this.value) : new Date(2026, 6, 30);
+    this.root = document.createElement('div');
+    this.root.className = 'bc-datepicker';
+    this.mount.appendChild(this.root);
+    this.render();
+    var self = this;
+    closers.push(function (e) { if (self.root && !self.root.contains(e.target)) self.close(); });
+  }
+  BcDatePicker.prototype.render = function () {
+    var self = this;
+    this.root.innerHTML =
+      '<div class="bc-datepicker__control">' + icon('calendar', 14).replace('<svg ', '<svg class="bc-datepicker__calendar-icon" ') +
+        '<span class="' + (this.value ? 'bc-datepicker__value' : 'bc-datepicker__placeholder') + '">' + (this.value || this.placeholder) + '</span>' +
+      '</div>' +
+      '<div class="bc-datepicker__panel">' + renderCalendar(this.viewDate, function (d) { return self.value && fmtDate(d) === self.value; }) + '</div>';
+    this.root.querySelector('.bc-datepicker__control').addEventListener('click', function () { self.toggle(); });
+    this.bindPanel();
+  };
+  BcDatePicker.prototype.bindPanel = function () {
+    var self = this;
+    this.root.querySelectorAll('[data-nav]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var dir = parseInt(btn.getAttribute('data-nav'), 10);
+        self.viewDate = new Date(self.viewDate.getFullYear(), self.viewDate.getMonth() + dir, 1);
+        self.render();
+        self.open();
+      });
+    });
+    this.root.querySelectorAll('[data-date]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        self.value = btn.getAttribute('data-date');
+        self.onChange(self.value);
+        self.render();
+        self.close();
+      });
+    });
+  };
+  BcDatePicker.prototype.toggle = function () { this.root.classList.contains('open') ? this.close() : this.open(); };
+  BcDatePicker.prototype.open = function () { this.root.classList.add('open'); };
+  BcDatePicker.prototype.close = function () { this.root.classList.remove('open'); };
+
+  function BcRangePicker(mountEl, opts) {
+    this.mount = mountEl;
+    this.start = (opts.value && opts.value[0]) || '';
+    this.end = (opts.value && opts.value[1]) || '';
+    this.onChange = opts.onChange || function () {};
+    this.picking = 'start';
+    this.viewDate = new Date(2026, 6, 30);
+    this.root = document.createElement('div');
+    this.root.className = 'bc-datepicker';
+    this.mount.appendChild(this.root);
+    this.render();
+    var self = this;
+    closers.push(function (e) { if (self.root && !self.root.contains(e.target)) self.close(); });
+  }
+  BcRangePicker.prototype.render = function () {
+    var self = this;
+    this.root.innerHTML =
+      '<div class="bc-datepicker__control">' + icon('calendar', 14).replace('<svg ', '<svg class="bc-datepicker__calendar-icon" ') +
+        '<span class="' + (this.start ? 'bc-datepicker__value' : 'bc-datepicker__placeholder') + '">' + (this.start || '开始日期') + '</span>' +
+        '<span class="bc-rangepicker__sep">~</span>' +
+        '<span class="' + (this.end ? 'bc-datepicker__value' : 'bc-datepicker__placeholder') + '">' + (this.end || '结束日期') + '</span>' +
+      '</div>' +
+      '<div class="bc-datepicker__panel">' + renderCalendar(this.viewDate, function (d) {
+        var f = fmtDate(d);
+        return (self.start && f === self.start) || (self.end && f === self.end);
+      }, function (d) {
+        var f = fmtDate(d);
+        return self.start && self.end && f > self.start && f < self.end;
+      }) + '</div>';
+    this.root.querySelector('.bc-datepicker__control').addEventListener('click', function () { self.toggle(); });
+    this.bindPanel();
+  };
+  BcRangePicker.prototype.bindPanel = function () {
+    var self = this;
+    this.root.querySelectorAll('[data-nav]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var dir = parseInt(btn.getAttribute('data-nav'), 10);
+        self.viewDate = new Date(self.viewDate.getFullYear(), self.viewDate.getMonth() + dir, 1);
+        self.render();
+        self.open();
+      });
+    });
+    this.root.querySelectorAll('[data-date]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var f = btn.getAttribute('data-date');
+        if (self.picking === 'start' || (self.start && self.end)) {
+          self.start = f; self.end = ''; self.picking = 'end';
+          self.render(); self.open();
+        } else {
+          if (f < self.start) { self.end = self.start; self.start = f; } else { self.end = f; }
+          self.picking = 'start';
+          self.onChange([self.start, self.end]);
+          self.render();
+          self.close();
+        }
+      });
+    });
+  };
+  BcRangePicker.prototype.toggle = function () { this.root.classList.contains('open') ? this.close() : this.open(); };
+  BcRangePicker.prototype.open = function () { this.root.classList.add('open'); };
+  BcRangePicker.prototype.close = function () { this.root.classList.remove('open'); };
+
+  /* ========================================================================
+     Popover / Dropdown 通用开关（点击型）
+     ==================================================================== */
+  function toggleOpenClass(el, className) {
+    className = className || 'open';
+    var isOpen = el.classList.contains(className);
+    document.querySelectorAll('.bc-popover.open, .bc-dropdown-menu.open').forEach(function (o) { o.classList.remove('open'); });
+    if (!isOpen) el.classList.add(className);
+  }
+
+  /* ========================================================================
+     导航：Header / Sider / Breadcrumb
+     ==================================================================== */
+  var PAGE_BREADCRUMBS = {
+    'task-list': [{ label: '首页' }, { label: '任务管理' }, { label: '任务管理列表' }],
+    'gallery': [{ label: '首页' }, { label: '设计规范' }, { label: '组件规范速查' }]
+  };
+  function renderBreadcrumb(key) {
+    var items = PAGE_BREADCRUMBS[key];
+    var html = items.map(function (it, idx) {
+      var sep = idx > 0 ? '<span class="bc-breadcrumb__sep">/</span>' : '';
+      var isLast = idx === items.length - 1;
+      return sep + (isLast ? '<span class="bc-breadcrumb__current">' + it.label + '</span>' : '<span class="bc-breadcrumb__item">' + it.label + '</span>');
+    }).join('');
+    document.getElementById('breadcrumb').innerHTML = html;
+  }
+  function switchPage(key) {
+    document.querySelectorAll('.gallery-page-section').forEach(function (s) { s.classList.remove('active'); });
+    document.getElementById('page-' + key).classList.add('active');
+    document.querySelectorAll('.bc-menu__item').forEach(function (m) { m.classList.toggle('active', m.getAttribute('data-page') === key); });
+    renderBreadcrumb(key);
+    document.querySelector('.app-main__content').scrollTop = 0;
+  }
+  document.querySelectorAll('#appSider .bc-menu__item').forEach(function (item) {
+    item.addEventListener('click', function () { switchPage(item.getAttribute('data-page')); });
+  });
+  document.getElementById('collapseBtn').addEventListener('click', function () {
+    document.getElementById('appSider').classList.toggle('app-sider--collapsed');
+  });
+  document.getElementById('userMenuTrigger').addEventListener('click', function (e) {
+    e.stopPropagation();
+    toggleOpenClass(document.getElementById('userMenu'));
+  });
+  closers.push(function (e) {
+    var menu = document.getElementById('userMenu');
+    if (menu && !menu.parentElement.contains(e.target)) menu.classList.remove('open');
+  });
+  renderBreadcrumb('task-list');
+
+  /* ========================================================================
+     任务管理列表：筛选控件初始化
+     ==================================================================== */
+  var ownerOptions = OWNERS.map(function (o) { return { label: o, value: o }; });
+  var priorityOptions = PRIORITY_KEYS.map(function (k) { return { label: PRIORITY_MAP[k].label, value: k }; });
+  var statusOptions = STATUS_KEYS.map(function (k) { return { label: STATUS_MAP[k].label, value: k }; });
+  var projectOptions = PROJECTS.map(function (p) { return { label: p, value: p }; });
+
+  var ownerFilterSelect = new BcSelect(document.getElementById('ownerSelectMount'), {
+    options: ownerOptions, multiple: true, placeholder: '请选择负责人',
+    onChange: function (v) { state.filters.owners = v; }
+  });
+  var priorityFilterSelect = new BcSelect(document.getElementById('prioritySelectMount'), {
+    options: priorityOptions, multiple: true, placeholder: '请选择优先级',
+    onChange: function (v) { state.filters.priorities = v; }
+  });
+  var statusFilterSelect = new BcSelect(document.getElementById('statusSelectMount'), {
+    options: statusOptions, multiple: false, placeholder: '请选择状态',
+    onChange: function (v) { state.filters.status = v; }
+  });
+  var dueDateRangePicker = new BcRangePicker(document.getElementById('dueDateRangeMount'), {
+    onChange: function (v) { state.filters.dueFrom = v[0]; state.filters.dueTo = v[1]; }
+  });
+
+  var filterNameInput = document.getElementById('filterName');
+  var filterNameClearBtn = filterNameInput.closest('.bc-input-wrap').querySelector('.bc-input__clear');
+  function syncFilterNameClear() { filterNameClearBtn.classList.toggle('show', !!filterNameInput.value); }
+  filterNameInput.addEventListener('input', function (e) { state.filters.name = e.target.value; syncFilterNameClear(); });
+  filterNameClearBtn.addEventListener('click', function () {
+    filterNameInput.value = '';
+    state.filters.name = '';
+    syncFilterNameClear();
+  });
+
+  document.getElementById('businessTabs').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-tab]');
+    if (!btn) return;
+    state.businessTab = btn.getAttribute('data-tab');
+    this.querySelectorAll('.bc-tabs__item').forEach(function (b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    state.page = 1;
+    renderTable();
+  });
+
+  document.getElementById('filterModeTabs').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-mode]');
+    if (!btn) return;
+    setFilterMode(btn.getAttribute('data-mode'));
+  });
+  function setFilterMode(mode) {
+    state.filterMode = mode;
+    document.querySelectorAll('#filterModeTabs .bc-tabs__item').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-mode') === mode);
+    });
+    document.getElementById('dueDateFormItem').style.display = mode === 'advanced' ? 'flex' : 'none';
+    document.getElementById('toggleFilterText').textContent = mode === 'advanced' ? '收起' : '展开';
+  }
+  document.getElementById('toggleFilterModeBtn').addEventListener('click', function () {
+    setFilterMode(state.filterMode === 'advanced' ? 'default' : 'advanced');
+  });
+
+  document.getElementById('urgentCheckbox').addEventListener('click', function (e) {
+    e.preventDefault();
+    state.onlyUrgent = !state.onlyUrgent;
+    this.classList.toggle('checked', state.onlyUrgent);
+    this.querySelector('input').checked = state.onlyUrgent;
+    state.page = 1;
+    renderTable();
+  });
+
+  document.getElementById('searchForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    state.page = 1;
+    renderTable();
+  });
+  document.getElementById('resetBtn').addEventListener('click', function () {
+    state.filters = { name: '', owners: [], priorities: [], status: '', dueFrom: '', dueTo: '' };
+    document.getElementById('filterName').value = '';
+    ownerFilterSelect.setValue([]);
+    priorityFilterSelect.setValue([]);
+    statusFilterSelect.setValue('');
+    state.page = 1;
+    renderTable();
+  });
+
+  document.getElementById('noticeCloseBtn').addEventListener('click', function () {
+    document.getElementById('taskNotice').style.display = 'none';
+  });
+
+  /* ========================================================================
+     状态胶囊组
+     ==================================================================== */
+  function renderCapsules() {
+    var counts = { all: state.tasks.length };
+    state.tasks.forEach(function (t) { counts[t.status] = (counts[t.status] || 0) + 1; });
+    var labels = [
+      { key: 'all', label: '全部' },
+      { key: 'pending', label: '待处理' },
+      { key: 'processing', label: '进行中' },
+      { key: 'reviewing', label: '待审核' },
+      { key: 'done', label: '已完成' },
+      { key: 'overdue', label: '已逾期' }
+    ];
+    var html = labels.map(function (l) {
+      var count = l.key === 'all' ? '' : '(' + (counts[l.key] || 0) + ')';
+      return '<button type="button" class="bc-tabs__item' + (state.statusCapsule === l.key ? ' active' : '') + '" data-status="' + l.key + '">' + l.label + count + '</button>';
+    }).join('');
+    var el = document.getElementById('statusCapsules');
+    el.innerHTML = html;
+    el.querySelectorAll('[data-status]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        state.statusCapsule = btn.getAttribute('data-status');
+        state.page = 1;
+        renderTable();
+      });
+    });
+  }
+
+  /* ========================================================================
+     表格：过滤 / 排序 / 分页 / 渲染
+     ==================================================================== */
+  function getFilteredTasks() {
+    return state.tasks.filter(function (t) {
+      if (state.businessTab === 'mine' && t.owner !== '林晓雯') return false;
+      if (state.businessTab === 'archived' && t.status !== 'done') return false;
+      if (state.statusCapsule !== 'all' && t.status !== state.statusCapsule) return false;
+      if (state.onlyUrgent && t.priority !== 'urgent') return false;
+      if (state.filters.name && t.name.indexOf(state.filters.name) === -1) return false;
+      if (state.filters.owners.length && state.filters.owners.indexOf(t.owner) === -1) return false;
+      if (state.filters.priorities.length && state.filters.priorities.indexOf(t.priority) === -1) return false;
+      if (state.filters.status && t.status !== state.filters.status) return false;
+      if (state.filters.dueFrom && t.dueDate < state.filters.dueFrom) return false;
+      if (state.filters.dueTo && t.dueDate > state.filters.dueTo) return false;
+      return true;
+    });
+  }
+  function getSortedTasks(list) {
+    if (!state.sortKey || !state.sortOrder) return list;
+    var copy = list.slice();
+    copy.sort(function (a, b) {
+      var av = a[state.sortKey], bv = b[state.sortKey];
+      if (av === bv) return 0;
+      var res = av > bv ? 1 : -1;
+      return state.sortOrder === 'asc' ? res : -res;
+    });
+    return copy;
+  }
+  function tagHtml(type, label, opts) {
+    opts = opts || {};
+    return '<span class="bc-tag bc-tag--' + type + '">' + (opts.dot ? '<span class="bc-tag__dot"></span>' : '') + label + '</span>';
+  }
+  function renderTable() {
+    renderCapsules();
+    var filtered = getSortedTasks(getFilteredTasks());
+    var total = filtered.length;
+    var totalPages = Math.max(1, Math.ceil(total / state.pageSize));
+    if (state.page > totalPages) state.page = totalPages;
+    var start = (state.page - 1) * state.pageSize;
+    var paged = filtered.slice(start, start + state.pageSize);
+
+    document.getElementById('noticeText').textContent =
+      '当前展示为「' + businessTabLabel(state.businessTab) + '」筛选结果，共匹配 ' + total + ' 条任务；系统将于本周日 24:00 进行例行维护，请提前保存草稿。';
+
+    var tbody = document.getElementById('taskTableBody');
+    if (paged.length === 0) {
+      tbody.innerHTML = '<tr><td class="bc-table__empty" colspan="10">暂无数据</td></tr>';
+    } else {
+      tbody.innerHTML = paged.map(function (t) {
+        var checked = !!state.selected[t.id];
+        var priorityMeta = PRIORITY_MAP[t.priority];
+        var statusMeta = STATUS_MAP[t.status];
+        var tagsHtml = t.tags.map(function (tg) { return tagHtml('gray', tg); }).join(' ');
+        return (
+          '<tr class="' + (checked ? 'selected' : '') + '" data-row="' + t.id + '">' +
+            '<td><label class="bc-checkbox' + (checked ? ' checked' : '') + '" data-row-checkbox="' + t.id + '"><input type="checkbox" ' + (checked ? 'checked' : '') + ' /><span class="bc-checkbox__box"><svg class="chk" viewBox="0 0 1024 1024" width="10" height="10" fill="none"><path d="M180 540 400 750 844 280" stroke="#fff" stroke-width="110" stroke-linecap="round" stroke-linejoin="round"/></svg></span></label></td>' +
+            '<td><button type="button" class="task-link" data-detail="' + t.id + '">' + t.id + '</button></td>' +
+            '<td><div class="task-name-cell"><span class="task-name-cell__text" title="' + t.name + '">' + t.name + '</span><div class="task-name-cell__tags">' + tagsHtml + '</div></div></td>' +
+            '<td><span class="task-owner-cell"><span class="task-owner-cell__avatar">' + t.owner.slice(0, 1) + '</span>' + t.owner + '</span></td>' +
+            '<td>' + tagHtml(priorityMeta.tag, priorityMeta.label, { dot: true }) + '</td>' +
+            '<td>' + tagHtml(statusMeta.tag, statusMeta.label) + '</td>' +
+            '<td><span class="bc-progress-line"><span class="bc-progress-line__track"><span class="bc-progress-line__fill' + (t.status === 'overdue' ? ' exception' : '') + '" style="width:' + t.progress + '%"></span></span><span class="bc-progress-line__text">' + t.progress + '%</span></span></td>' +
+            '<td style="text-align:center;"><span class="bc-switch' + (t.autoTrack ? ' checked' : '') + ' bc-switch--small" data-switch="' + t.id + '"><span class="bc-switch__dot"></span></span></td>' +
+            '<td>' + t.dueDate + '</td>' +
+            '<td><span class="task-actions">' +
+              '<button type="button" class="bc-btn bc-btn--textPrimary bc-btn--small" data-detail="' + t.id + '">详情</button>' +
+              '<button type="button" class="bc-btn bc-btn--textPrimary bc-btn--small" data-edit="' + t.id + '">编辑</button>' +
+              '<span class="bc-popover-wrap"><button type="button" class="bc-btn bc-btn--textPrimary bc-btn--small" style="color:var(--bc-dangerColor)" data-delete-trigger="' + t.id + '">删除</button>' +
+                '<div class="bc-popover bc-popover--confirm" data-delete-popover="' + t.id + '" style="min-width:220px;">' +
+                  '<span class="bc-popover__title">删除确认</span>' +
+                  '<span class="bc-popover__content">确定删除该任务吗？</span>' +
+                  '<span class="bc-popover__actions"><button type="button" class="bc-btn bc-btn--gray bc-btn--small" data-popover-cancel>取消</button><button type="button" class="bc-btn bc-btn--primary bc-btn--small" data-delete-confirm="' + t.id + '">确定</button></span>' +
+                '</div>' +
+              '</span>' +
+              '<span class="bc-dropdown-wrap"><button type="button" class="task-more-btn" data-more-trigger="' + t.id + '">' + icon('more', 14) + '</button>' +
+                '<ul class="bc-dropdown-menu bc-dropdown-menu--right" data-more-menu="' + t.id + '">' +
+                  '<li class="bc-dropdown-menu__item" data-more-action="copy" data-id="' + t.id + '">复制任务</li>' +
+                  '<li class="bc-dropdown-menu__item" data-more-action="archive" data-id="' + t.id + '">归档任务</li>' +
+                  '<li class="bc-dropdown-menu__item" data-more-action="transfer" data-id="' + t.id + '">转交他人</li>' +
+                '</ul>' +
+              '</span>' +
+            '</span></td>' +
+          '</tr>'
+        );
+      }).join('');
+    }
+    bindTableEvents();
+    renderPagination(total);
+    renderSelectAllState(paged);
+    updateBatchButtons();
+  }
+  function businessTabLabel(key) {
+    var map = { all: '全部任务', mine: '我负责的', created: '我创建的', archived: '已归档' };
+    return map[key] || key;
+  }
+  function findTask(id) { return state.tasks.filter(function (t) { return t.id === id; })[0]; }
+
+  function bindTableEvents() {
+    var tbody = document.getElementById('taskTableBody');
+    tbody.querySelectorAll('[data-row-checkbox]').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        var id = el.getAttribute('data-row-checkbox');
+        state.selected[id] = !state.selected[id];
+        renderTable();
+      });
+    });
+    tbody.querySelectorAll('[data-switch]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var id = el.getAttribute('data-switch');
+        var t = findTask(id);
+        t.autoTrack = !t.autoTrack;
+        showToast('success', '已' + (t.autoTrack ? '开启' : '关闭') + '自动跟踪');
+        renderTable();
+      });
+    });
+    tbody.querySelectorAll('[data-detail]').forEach(function (el) {
+      el.addEventListener('click', function () { openDetailDrawer(el.getAttribute('data-detail')); });
+    });
+    tbody.querySelectorAll('[data-edit]').forEach(function (el) {
+      el.addEventListener('click', function () { openTaskModal(el.getAttribute('data-edit')); });
+    });
+    tbody.querySelectorAll('[data-delete-trigger]').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var id = el.getAttribute('data-delete-trigger');
+        var pop = tbody.querySelector('[data-delete-popover="' + id + '"]');
+        toggleOpenClass(pop);
+      });
+    });
+    tbody.querySelectorAll('[data-delete-confirm]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var id = el.getAttribute('data-delete-confirm');
+        var t = findTask(id);
+        state.tasks = state.tasks.filter(function (x) { return x.id !== id; });
+        delete state.selected[id];
+        showToast('success', '任务「' + t.name + '」已删除');
+        renderTable();
+      });
+    });
+    tbody.querySelectorAll('[data-more-trigger]').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var id = el.getAttribute('data-more-trigger');
+        var menu = tbody.querySelector('[data-more-menu="' + id + '"]');
+        toggleOpenClass(menu);
+      });
+    });
+    tbody.querySelectorAll('[data-more-action]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var action = el.getAttribute('data-more-action');
+        var msgMap = { copy: '已复制任务', archive: '已归档任务', transfer: '转交功能开发中' };
+        showToast('info', msgMap[action]);
+        el.closest('.bc-dropdown-menu').classList.remove('open');
+      });
+    });
+    tbody.querySelectorAll('[data-popover-cancel]').forEach(function (el) {
+      el.addEventListener('click', function () { el.closest('.bc-popover').classList.remove('open'); });
+    });
+  }
+  closers.push(function (e) {
+    document.querySelectorAll('.bc-popover.open, .bc-dropdown-menu.open').forEach(function (el) {
+      if (!el.parentElement.contains(e.target)) el.classList.remove('open');
+    });
+  });
+
+  function renderSelectAllState(paged) {
+    var box = document.getElementById('selectAllCheckbox');
+    var allIds = paged.map(function (t) { return t.id; });
+    var allChecked = allIds.length > 0 && allIds.every(function (id) { return state.selected[id]; });
+    var someChecked = allIds.some(function (id) { return state.selected[id]; }) && !allChecked;
+    box.classList.toggle('checked', allChecked);
+    box.classList.toggle('indeterminate', someChecked);
+    box.querySelector('input').checked = allChecked;
+    box.onclick = function (e) {
+      e.preventDefault();
+      var checkNow = !allChecked;
+      allIds.forEach(function (id) { state.selected[id] = checkNow; });
+      renderTable();
+    };
+  }
+  function updateBatchButtons() {
+    var count = Object.keys(state.selected).filter(function (id) { return state.selected[id]; }).length;
+    var assignBtn = document.getElementById('batchAssignBtn');
+    var deleteBtn = document.getElementById('batchDeleteBtn');
+    assignBtn.disabled = count === 0;
+    deleteBtn.disabled = count === 0;
+    deleteBtn.textContent = count > 0 ? '批量删除(' + count + ')' : '批量删除';
+    document.getElementById('batchDeleteContent').textContent = '确定删除选中的 ' + count + ' 条任务吗？';
+  }
+
+  document.getElementById('batchAssignBtn').addEventListener('click', function () { showToast('info', '批量指派功能开发中'); });
+  document.getElementById('batchDeleteBtn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    toggleOpenClass(document.getElementById('batchDeletePopover'));
+  });
+  document.getElementById('batchDeleteConfirm').addEventListener('click', function () {
+    var ids = Object.keys(state.selected).filter(function (id) { return state.selected[id]; });
+    state.tasks = state.tasks.filter(function (t) { return ids.indexOf(t.id) === -1; });
+    state.selected = {};
+    showToast('success', '已批量删除 ' + ids.length + ' 条任务');
+    document.getElementById('batchDeletePopover').classList.remove('open');
+    renderTable();
+  });
+  document.getElementById('importBtn').addEventListener('click', function () { showToast('info', '导入功能开发中'); });
+  document.getElementById('copyIdsBtn').addEventListener('click', function () { showToast('success', '已复制所选任务 ID'); });
+  document.getElementById('appealRecordBtn').addEventListener('click', function () { showToast('info', '查询申诉记录功能开发中'); });
+
+  document.querySelectorAll('[data-sort]').forEach(function (th) {
+    th.classList.add('sortable');
+    th.addEventListener('click', function () {
+      var key = th.getAttribute('data-sort');
+      if (state.sortKey !== key) { state.sortKey = key; state.sortOrder = 'asc'; }
+      else if (state.sortOrder === 'asc') { state.sortOrder = 'desc'; }
+      else if (state.sortOrder === 'desc') { state.sortKey = ''; state.sortOrder = null; }
+      else { state.sortOrder = 'asc'; }
+      document.querySelectorAll('[data-sort-icons]').forEach(function (span) {
+        var k = span.getAttribute('data-sort-icons');
+        var active = state.sortKey === k;
+        span.innerHTML =
+          '<svg class="bc-table__sort-icon' + (active && state.sortOrder === 'asc' ? ' active' : '') + '" width="8" height="8" viewBox="0 0 1024 1024" fill="currentColor" style="transform:rotate(180deg)">' + '<path d="M512 646.4 233.6 368a51.2 51.2 0 0 0-72.4 72.4l314.5 314.5a45.7 45.7 0 0 0 64.6 0l314.5-314.5a51.2 51.2 0 0 0-72.4-72.4L512 646.4z"/></svg>' +
+          '<svg class="bc-table__sort-icon' + (active && state.sortOrder === 'desc' ? ' active' : '') + '" width="8" height="8" viewBox="0 0 1024 1024" fill="currentColor">' + '<path d="M512 646.4 233.6 368a51.2 51.2 0 0 0-72.4 72.4l314.5 314.5a45.7 45.7 0 0 0 64.6 0l314.5-314.5a51.2 51.2 0 0 0-72.4-72.4L512 646.4z"/></svg>';
+      });
+      renderTable();
+    });
+  });
+
+  /* ========================================================================
+     Pagination §5.17
+     ==================================================================== */
+  function renderPaginationInto(containerId, current, total, pageSize, onChange) {
+    var totalPages = Math.max(1, Math.ceil(total / pageSize));
+    var pages = [];
+    for (var i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= current - 2 && i <= current + 2)) pages.push(i);
+      else if (pages[pages.length - 1] !== '...') pages.push('...');
+    }
+    var pagesHtml = pages.map(function (p) {
+      if (p === '...') return '<span class="bc-pagination__jump">…</span>';
+      return '<button type="button" class="bc-pagination__item' + (p === current ? ' active' : '') + '" data-page="' + p + '">' + p + '</button>';
+    }).join('');
+    var el = document.getElementById(containerId);
+    el.innerHTML =
+      '<span class="bc-pagination__total">共有 ' + total + ' 条</span>' +
+      '<div class="bc-pagination__pages">' +
+        '<button type="button" class="bc-pagination__arrow" id="' + containerId + '-prev" ' + (current <= 1 ? 'disabled' : '') + '>' + icon('left', 10) + '</button>' +
+        pagesHtml +
+        '<button type="button" class="bc-pagination__arrow" id="' + containerId + '-next" ' + (current >= totalPages ? 'disabled' : '') + '>' + icon('right', 10) + '</button>' +
+      '</div>' +
+      '<span class="bc-pagination__jumper">前往<input class="bc-pagination__jump-input" id="' + containerId + '-jump" />页</span>' +
+      '<span class="bc-pagination__size-changer" id="' + containerId + '-size"></span>';
+    el.querySelector('#' + containerId + '-prev').addEventListener('click', function () { if (current > 1) onChange(current - 1, pageSize); });
+    el.querySelector('#' + containerId + '-next').addEventListener('click', function () { if (current < totalPages) onChange(current + 1, pageSize); });
+    el.querySelectorAll('[data-page]').forEach(function (btn) {
+      btn.addEventListener('click', function () { onChange(parseInt(btn.getAttribute('data-page'), 10), pageSize); });
+    });
+    el.querySelector('#' + containerId + '-jump').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && this.value) {
+        var p = Math.min(totalPages, Math.max(1, parseInt(this.value, 10)));
+        onChange(p, pageSize);
+        this.value = '';
+      }
+    });
+    new BcSelect(el.querySelector('#' + containerId + '-size'), {
+      options: [{ label: '10 条/页', value: '10' }, { label: '20 条/页', value: '20' }, { label: '50 条/页', value: '50' }],
+      value: String(pageSize),
+      clearable: false,
+      onChange: function (v) { onChange(1, parseInt(v, 10)); }
+    });
+  }
+  function renderPagination(total) {
+    renderPaginationInto('taskPagination', state.page, total, state.pageSize, function (page, pageSize) {
+      state.page = page; state.pageSize = pageSize; renderTable();
+    });
+  }
+
+  /* ========================================================================
+     Modal：新建/编辑任务 §5.11
+     ==================================================================== */
+  var TEMPLATES = [
+    { key: 'blank', title: '空白任务', desc: '从零开始创建任务' },
+    { key: 'review', title: '审核类任务', desc: '预置审核流程与检查清单' },
+    { key: 'bugfix', title: '缺陷修复', desc: '预置问题定位与验收步骤' }
+  ];
+  function renderTemplateCards() {
+    var html = TEMPLATES.map(function (t) {
+      return (
+        '<div class="bc-card create-task__template-card' + (state.templateKey === t.key ? ' selected' : '') + '" data-template="' + t.key + '">' +
+          '<span class="bc-card__checked-triangle"><svg class="bc-card__checked-icon" width="12" height="12" viewBox="0 0 1024 1024" fill="currentColor"><path d="M877 233.3a44.8 44.8 0 0 1 4 63.2L433.5 800a44.8 44.8 0 0 1-64.6 1.6L143.6 576.3a44.8 44.8 0 1 1 63.4-63.3l191.6 191.6L813.8 237.3a44.8 44.8 0 0 1 63.2-4z"/></svg></span>' +
+          '<div class="bc-card__body"><div class="create-task__template-title">' + t.title + '</div><div class="create-task__template-desc">' + t.desc + '</div></div>' +
+        '</div>'
+      );
+    }).join('');
+    var container = document.getElementById('templateCards');
+    container.innerHTML = html;
+    container.querySelectorAll('[data-template]').forEach(function (card) {
+      card.addEventListener('click', function () {
+        state.templateKey = card.getAttribute('data-template');
+        renderTemplateCards();
+      });
+    });
+  }
+
+  var projectSelect = new BcSelect(document.getElementById('projectSelectMount'), { options: projectOptions, value: projectOptions[0].value, clearable: false });
+  var taskOwnerSelect = new BcSelect(document.getElementById('taskOwnerSelectMount'), { options: ownerOptions, value: ownerOptions[0].value, clearable: false });
+  var taskDueDatePicker = new BcDatePicker(document.getElementById('taskDueDateMount'), {});
+  var taskPriorityValue = 'normal';
+  document.getElementById('taskPriorityRadio').addEventListener('click', function (e) {
+    var btn = e.target.closest('.bc-radio-btn');
+    if (!btn) return;
+    taskPriorityValue = btn.getAttribute('data-value');
+    this.querySelectorAll('.bc-radio-btn').forEach(function (b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+  });
+  var taskAutoTrackValue = true;
+  document.getElementById('taskAutoTrackSwitch').addEventListener('click', function () {
+    taskAutoTrackValue = !taskAutoTrackValue;
+    this.classList.toggle('checked', taskAutoTrackValue);
+  });
+
+  function openTaskModal(taskId) {
+    state.editingTaskId = taskId || null;
+    var mask = document.getElementById('taskModalMask');
+    var isEdit = !!taskId;
+    document.getElementById('taskModalTitle').textContent = isEdit ? '编辑任务' : '新建任务';
+    document.getElementById('taskModalOk').textContent = isEdit ? '保存' : '创建';
+    document.getElementById('taskModalTemplates').style.display = isEdit ? 'none' : 'block';
+    document.getElementById('taskNameFormItem').classList.remove('error');
+    document.getElementById('taskNameError').style.display = 'none';
+
+    if (isEdit) {
+      var t = findTask(taskId);
+      document.getElementById('taskNameInput').value = t.name;
+      projectSelect.setValue(t.project);
+      taskOwnerSelect.setValue(t.owner);
+      taskPriorityValue = t.priority;
+      document.querySelectorAll('#taskPriorityRadio .bc-radio-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-value') === t.priority); });
+      taskDueDatePicker.value = t.dueDate; taskDueDatePicker.render();
+      document.getElementById('taskDescInput').value = '';
+      taskAutoTrackValue = t.autoTrack;
+      document.getElementById('taskAutoTrackSwitch').classList.toggle('checked', taskAutoTrackValue);
+    } else {
+      state.templateKey = 'blank';
+      renderTemplateCards();
+      document.getElementById('taskNameInput').value = '';
+      projectSelect.setValue(projectOptions[0].value);
+      taskOwnerSelect.setValue(ownerOptions[0].value);
+      taskPriorityValue = 'normal';
+      document.querySelectorAll('#taskPriorityRadio .bc-radio-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-value') === 'normal'); });
+      taskDueDatePicker.value = ''; taskDueDatePicker.render();
+      document.getElementById('taskDescInput').value = '';
+      taskAutoTrackValue = true;
+      document.getElementById('taskAutoTrackSwitch').classList.add('checked');
+    }
+    mask.classList.add('open');
+  }
+  function closeTaskModal() { document.getElementById('taskModalMask').classList.remove('open'); }
+  document.getElementById('newTaskBtn').addEventListener('click', function () { openTaskModal(null); });
+  document.getElementById('taskModalClose').addEventListener('click', closeTaskModal);
+  document.getElementById('taskModalCancel').addEventListener('click', closeTaskModal);
+  document.getElementById('taskModalMask').addEventListener('click', function (e) { if (e.target === this) closeTaskModal(); });
+  document.getElementById('taskModalOk').addEventListener('click', function () {
+    var name = document.getElementById('taskNameInput').value.trim();
+    if (!name) {
+      document.getElementById('taskNameFormItem').classList.add('error');
+      document.getElementById('taskNameError').style.display = 'block';
+      return;
+    }
+    if (state.editingTaskId) {
+      var t = findTask(state.editingTaskId);
+      t.name = name;
+      t.project = projectSelect.value;
+      t.owner = taskOwnerSelect.value;
+      t.priority = taskPriorityValue;
+      t.dueDate = taskDueDatePicker.value || t.dueDate;
+      t.autoTrack = taskAutoTrackValue;
+      showToast('success', '任务已更新');
+    } else {
+      var newTask = {
+        id: 'TSK-' + (2026000 + state.tasks.length + 1),
+        name: name,
+        project: projectSelect.value,
+        owner: taskOwnerSelect.value,
+        priority: taskPriorityValue,
+        status: 'pending',
+        progress: 0,
+        autoTrack: taskAutoTrackValue,
+        dueDate: taskDueDatePicker.value || '2026-08-30',
+        createdAt: '2026-07-31',
+        tags: ['新建']
+      };
+      state.tasks.unshift(newTask);
+      showToast('success', '任务创建成功');
+    }
+    closeTaskModal();
+    renderTable();
+  });
+
+  /* ========================================================================
+     Drawer：任务详情 §5.20 / §9.2
+     ==================================================================== */
+  var STEP_ITEMS = [
+    { title: '创建任务', desc: '负责人确认任务范围' },
+    { title: '进行中', desc: '按计划推进并更新进度' },
+    { title: '待审核', desc: '提交验收材料等待复核' },
+    { title: '已完成', desc: '任务归档' }
+  ];
+  var STATUS_TO_STEP = { pending: 0, processing: 1, reviewing: 2, done: 3, overdue: 1 };
+
+  function stepsHtml(current) {
+    return '<div class="bc-steps">' + STEP_ITEMS.map(function (s, idx) {
+      var cls = idx < current ? 'finish' : idx === current ? 'process' : 'wait';
+      var iconHtml = cls === 'finish' ? icon('check', 12) : '<span>' + (idx + 1) + '</span>';
+      var line = idx < STEP_ITEMS.length - 1 ? '<div class="bc-step__line"></div>' : '';
+      return '<div class="bc-step ' + cls + '"><div class="bc-step__icon">' + iconHtml + '</div><div><div class="bc-step__title">' + s.title + '</div><div class="bc-step__desc">' + s.desc + '</div></div>' + line + '</div>';
+    }).join('') + '</div>';
+  }
+  function progressCircleHtml(percent, exception) {
+    var size = 88, stroke = 6, r = (size - stroke) / 2, c = 2 * Math.PI * r;
+    var offset = c - (c * percent) / 100;
+    var color = exception ? '#ff1818' : 'var(--bc-themeColor)';
+    return (
+      '<span class="bc-progress-circle" style="width:' + size + 'px;height:' + size + 'px;">' +
+        '<svg width="' + size + '" height="' + size + '">' +
+          '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" stroke="var(--bc-trackColor)" stroke-width="' + stroke + '" fill="none"/>' +
+          '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" stroke="' + color + '" stroke-width="' + stroke + '" fill="none" stroke-dasharray="' + c + '" stroke-dashoffset="' + offset + '" stroke-linecap="round" transform="rotate(-90 ' + size / 2 + ' ' + size / 2 + ')"/>' +
+        '</svg>' +
+        '<span class="bc-progress-circle__text">' + percent + '%</span>' +
+      '</span>'
+    );
+  }
+  function openDetailDrawer(taskId) {
+    var t = findTask(taskId);
+    if (!t) return;
+    document.getElementById('taskDrawerTitle').textContent = '任务详情 · ' + t.id;
+    var priorityMeta = PRIORITY_MAP[t.priority], statusMeta = STATUS_MAP[t.status];
+    var needConfirm = t.status === 'reviewing';
+    var alreadyConfirm = t.status === 'done';
+    var statusBlock = '';
+    if (needConfirm) {
+      statusBlock = '<div class="task-detail__status-block task-detail__status-block--warn">' + icon('warnCircle', 14) + '<span>该任务处于<b>待确认</b>状态，请负责人尽快提交审核材料。</span></div>';
+    } else if (alreadyConfirm) {
+      statusBlock = '<div class="task-detail__status-block task-detail__status-block--success">' + icon('successCircle', 14) + '<span>该任务已于 ' + t.dueDate + ' <b>确认完成</b>，验收记录已归档。</span></div>';
+    }
+    document.getElementById('taskDrawerBody').innerHTML =
+      stepsHtml(STATUS_TO_STEP[t.status] || 0) +
+      '<div class="bc-divider"></div>' +
+      statusBlock +
+      '<div class="bc-card selected"><span class="bc-card__checked-triangle"><svg class="bc-card__checked-icon" width="12" height="12" viewBox="0 0 1024 1024" fill="currentColor"><path d="M877 233.3a44.8 44.8 0 0 1 4 63.2L433.5 800a44.8 44.8 0 0 1-64.6 1.6L143.6 576.3a44.8 44.8 0 1 1 63.4-63.3l191.6 191.6L813.8 237.3a44.8 44.8 0 0 1 63.2-4z"/></svg></span>' +
+        '<div class="bc-card__header">基本信息</div>' +
+        '<div class="bc-card__body">' +
+          '<div class="task-detail__row"><span class="task-detail__label">任务名称</span><span>' + t.name + '</span></div>' +
+          '<div class="task-detail__row"><span class="task-detail__label">所属项目</span><span>' + t.project + '</span></div>' +
+          '<div class="task-detail__row"><span class="task-detail__label">负责人</span><span>' + t.owner + '</span></div>' +
+          '<div class="task-detail__row"><span class="task-detail__label">优先级</span>' + tagHtml(priorityMeta.tag, priorityMeta.label, { dot: true }) + '</div>' +
+          '<div class="task-detail__row"><span class="task-detail__label">状态</span>' + tagHtml(statusMeta.tag, statusMeta.label) + '</div>' +
+          '<div class="task-detail__row"><span class="task-detail__label">截止日期</span><span>' + t.dueDate + '</span></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="task-detail__progress-row">' + progressCircleHtml(t.progress, t.status === 'overdue') +
+        '<div><div class="task-detail__progress-title">整体进度</div><div class="task-detail__progress-sub">创建于 ' + t.createdAt + '，预计 ' + t.dueDate + ' 截止</div></div>' +
+      '</div>' +
+      '<div class="bc-collapse">' +
+        '<div class="bc-collapse__panel open"><div class="bc-collapse__header">' + icon('down', 12).replace('<svg', '<svg class="bc-collapse__arrow"') + '<span>操作日志</span></div>' +
+          '<div class="bc-collapse__content">2026-07-30 09:12 林晓雯 创建了任务<br/>2026-07-30 14:20 ' + t.owner + ' 更新了进度至 ' + t.progress + '%<br/>2026-07-30 16:45 系统 自动同步了任务状态</div></div>' +
+        '<div class="bc-collapse__panel"><div class="bc-collapse__header">' + icon('down', 12).replace('<svg', '<svg class="bc-collapse__arrow"') + '<span>附件（2）</span></div>' +
+          '<div class="bc-collapse__content">' + tagHtml('info', '需求文档.pdf') + ' ' + tagHtml('info', '验收清单.xlsx') + '</div></div>' +
+      '</div>';
+    document.getElementById('taskDrawerBody').querySelectorAll('.bc-collapse__header').forEach(function (h) {
+      h.addEventListener('click', function () { h.closest('.bc-collapse__panel').classList.toggle('open'); });
+    });
+    document.getElementById('taskDrawerEditBtn').onclick = function () { closeDetailDrawer(); openTaskModal(t.id); };
+    document.getElementById('taskDrawerMask').classList.add('open');
+  }
+  function closeDetailDrawer() { document.getElementById('taskDrawerMask').classList.remove('open'); }
+  document.getElementById('taskDrawerClose').addEventListener('click', closeDetailDrawer);
+  document.getElementById('taskDrawerCloseBtn').addEventListener('click', closeDetailDrawer);
+  document.getElementById('taskDrawerMask').addEventListener('click', function (e) { if (e.target === this) closeDetailDrawer(); });
+
+  /* ESC 关闭 Modal / Drawer */
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    closeTaskModal();
+    closeDetailDrawer();
+    document.getElementById('galleryModalMask').classList.remove('open');
+    document.getElementById('galleryDrawerMask').classList.remove('open');
+  });
+
+  /* ========================================================================
+     组件规范速查页 —— 静态数据渲染 + 交互demo
+     ==================================================================== */
+  var THEME_COLORS = [['themeColor1','#e6f6ff'],['themeColor2','#a3daff'],['themeColor3','#7ac6ff'],['themeColor4','#52aeff'],['themeColor5','#2994ff'],['themeColor6','#0071f3'],['themeColor7','#0058cc'],['themeColor8','#0042a6'],['themeColor9','#002f80'],['themeColor10','#001e59']];
+  document.getElementById('themeColorSwatches').innerHTML = THEME_COLORS.map(function (c) {
+    return '<div class="color-swatch"><div class="color-swatch__block" style="background:' + c[1] + '"></div><span class="color-swatch__label">' + c[0] + '</span><span class="color-swatch__value">' + c[1] + '</span></div>';
+  }).join('');
+
+  var SEMANTIC_COLORS = [['danger','#f71010','dangerColor'],['success','#00bb12','successColor'],['warn','#fb7701','warnColor'],['info','#0071f3','(=themeColor)']];
+  document.getElementById('semanticColorSwatches').innerHTML = SEMANTIC_COLORS.map(function (c) {
+    return '<div class="color-swatch"><div class="color-swatch__block" style="background:' + c[1] + '"></div><span class="color-swatch__label">' + c[0] + '</span><span class="color-swatch__value">' + c[2] + '</span></div>';
+  }).join('');
+
+  var TEXT_COLORS = [['主要 .8','rgba(0,0,0,.8)'],['次要 .6','rgba(0,0,0,.6)'],['三级 .4','rgba(0,0,0,.4)'],['提示 .32','rgba(0,0,0,.32)'],['禁用 .24','rgba(0,0,0,.24)']];
+  document.getElementById('textColorSwatches').innerHTML = TEXT_COLORS.map(function (c) {
+    return '<div class="color-swatch"><div class="color-swatch__block" style="background:#fafafa;color:' + c[1] + ';display:flex;align-items:center;justify-content:center;font-weight:600;">文字</div><span class="color-swatch__label">' + c[0] + '</span></div>';
+  }).join('');
+
+  var STATUS_TRIPLE = [['success','#00bb12','#e3fae1','#9bed98'],['warn','#fb7701','#fff6e6','#ffdaa3'],['error','#f71010','#ffeae6','#ffbdb3'],['info','#0071f3','#e6f6ff','#a3daff']];
+  document.getElementById('statusTripleSwatches').innerHTML = STATUS_TRIPLE.map(function (c) {
+    return '<div class="status-triple-demo" style="color:' + c[1] + ';background:' + c[2] + ';border-color:' + c[3] + ';">' + c[0] + '</div>';
+  }).join('');
+
+  new BcSelect(document.getElementById('gallerySelectSingle'), { options: [{ label: '选项一', value: 'a' }, { label: '选项二', value: 'b' }, { label: '选项三', value: 'c' }], placeholder: '请选择' });
+  new BcSelect(document.getElementById('gallerySelectMulti'), { options: [{ label: '标签 A', value: 'a' }, { label: '标签 B', value: 'b' }, { label: '标签 C', value: 'c' }], multiple: true, value: ['a'] });
+
+  document.getElementById('closableTagBtn').addEventListener('click', function () { document.getElementById('closableTag').remove(); });
+
+  ['gallerySwitch1', 'gallerySwitch2', 'gallerySwitch3'].forEach(function (id) {
+    document.getElementById(id).addEventListener('click', function () { this.classList.toggle('checked'); });
+  });
+
+  document.querySelectorAll('[data-toast]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var type = btn.getAttribute('data-toast');
+      var msgMap = { success: '操作成功', warn: '请注意风险提示', error: '操作失败，请重试', info: '这是一条信息提示' };
+      showToast(type, msgMap[type]);
+    });
+  });
+
+  document.getElementById('galleryPopoverHover').addEventListener('mouseenter', function () { this.querySelector('.bc-popover').classList.add('open'); });
+  document.getElementById('galleryPopoverHover').addEventListener('mouseleave', function () { this.querySelector('.bc-popover').classList.remove('open'); });
+  document.getElementById('galleryConfirmPopoverBtn').addEventListener('click', function (e) { e.stopPropagation(); toggleOpenClass(document.getElementById('galleryConfirmPopover')); });
+  document.getElementById('galleryConfirmPopoverOk').addEventListener('click', function () {
+    document.getElementById('galleryConfirmPopover').classList.remove('open');
+    showToast('success', '已确认');
+  });
+  document.querySelectorAll('#galleryConfirmPopover [data-popover-cancel]').forEach(function (btn) {
+    btn.addEventListener('click', function () { document.getElementById('galleryConfirmPopover').classList.remove('open'); });
+  });
+
+  document.getElementById('galleryProgressLine').innerHTML =
+    '<span class="bc-progress-line" style="width:240px;"><span class="bc-progress-line__track"><span class="bc-progress-line__fill" style="width:68%"></span></span><span class="bc-progress-line__text">68%</span></span>' +
+    '<span class="bc-progress-line" style="width:240px;"><span class="bc-progress-line__track"><span class="bc-progress-line__fill exception" style="width:92%"></span></span><span class="bc-progress-line__text">92%</span></span>';
+  document.getElementById('galleryProgressCircle').innerHTML = progressCircleHtml(68, false) + progressCircleHtml(30, true);
+
+  document.getElementById('gallerySpinBtn').addEventListener('click', function () {
+    var mask = document.getElementById('gallerySpinMask');
+    mask.classList.add('show');
+    setTimeout(function () { mask.classList.remove('show'); }, 1500);
+  });
+
+  document.querySelectorAll('.demo-tabs').forEach(function (tabs) {
+    tabs.addEventListener('click', function (e) {
+      var btn = e.target.closest('.bc-tabs__item');
+      if (!btn) return;
+      tabs.querySelectorAll('.bc-tabs__item').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+    });
+  });
+
+  var galleryPage = 1;
+  (function initGalleryPagination() {
+    function go(p) { galleryPage = p; renderPaginationInto('galleryPagination', galleryPage, 230, 10, go); }
+    renderPaginationInto('galleryPagination', galleryPage, 230, 10, go);
+  })();
+
+  document.getElementById('galleryModalBtn').addEventListener('click', function () { document.getElementById('galleryModalMask').classList.add('open'); });
+  document.getElementById('galleryModalClose').addEventListener('click', function () { document.getElementById('galleryModalMask').classList.remove('open'); });
+  document.getElementById('galleryModalCancel').addEventListener('click', function () { document.getElementById('galleryModalMask').classList.remove('open'); });
+  document.getElementById('galleryModalOk').addEventListener('click', function () { document.getElementById('galleryModalMask').classList.remove('open'); });
+  document.getElementById('galleryModalMask').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('open'); });
+
+  document.getElementById('galleryDropdownBtn').addEventListener('click', function (e) { e.stopPropagation(); toggleOpenClass(document.getElementById('galleryDropdownMenu')); });
+  document.querySelectorAll('#galleryMenuDemo .bc-menu__item').forEach(function (item) {
+    item.addEventListener('click', function () {
+      document.querySelectorAll('#galleryMenuDemo .bc-menu__item').forEach(function (i) { i.classList.remove('active'); });
+      item.classList.add('active');
+    });
+  });
+
+  document.getElementById('galleryDrawerBtn').addEventListener('click', function () { document.getElementById('galleryDrawerMask').classList.add('open'); });
+  document.getElementById('galleryDrawerClose').addEventListener('click', function () { document.getElementById('galleryDrawerMask').classList.remove('open'); });
+  document.getElementById('galleryDrawerMask').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('open'); });
+
+  document.querySelectorAll('#galleryCollapse .bc-collapse__header').forEach(function (h) {
+    h.addEventListener('click', function () { h.closest('.bc-collapse__panel').classList.toggle('open'); });
+  });
+
+  document.getElementById('galleryNoticeWarnClose').addEventListener('click', function () { document.getElementById('galleryNoticeWarn').style.display = 'none'; });
+
+  new BcDatePicker(document.getElementById('galleryDatePickerMount'), {});
+  new BcRangePicker(document.getElementById('galleryRangePickerMount'), {});
+
+  /* ========================================================================
+     初始化
+     ==================================================================== */
+  setFilterMode('default');
+  renderTable();
+})();
+</script>
+</body>
+</html>
