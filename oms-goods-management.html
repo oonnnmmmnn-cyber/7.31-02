@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OMS 商品管理 — Beast Core Design Spec</title>
+<style>
+/* Beast Core + OMS Design Tokens (§2 / §4 / §6 / §8) */
+:root{
+  --bc-themeColor:#0071f3; --bc-themeColor1:#e6f6ff; --bc-themeColor7:#0058cc; --bc-themeColor8:#0042a6;
+  --bc-dangerColor:#f71010; --bc-danger-hover:#d10209; --bc-danger-active:#ab000b;
+  --bc-successColor:#00bb12; --bc-warnColor:#fb7701;
+  --bc-primaryTextColor:rgba(0,0,0,.8); --bc-secondaryTextColor:rgba(0,0,0,.6);
+  --bc-thirdlyTextColor:rgba(0,0,0,.4); --bc-hintTextColor:rgba(0,0,0,.32);
+  --bc-bgColor:#fff; --bc-disabledBgColor:#f5f5f5; --bc-borderColor:#dbdbdb;
+  --bc-divideColor:#ebebeb; --bc-trackColor:#f0f0f0; --bc-boxShadowColor:#eef7ff;
+  --bc-shellBg:#f0f2f5;
+  --bc-linkColor:#0071f3; --bc-link-hover:#0058cc; --bc-link-active:#0042a6;
+  --bc-icon-color:rgba(0,0,0,.4); --bc-icon-hoverColor:rgba(0,0,0,.8);
+  --bc-tableHover:#e6f9ff;
+  --bc-h-sm:24px; --bc-h-md:28px; --bc-h-lg:40px;
+  --bc-fs-lg:16px; --bc-radius:6px; --bc-toastRadius:3px;
+  --bc-ease:cubic-bezier(0.78,0.14,0.15,0.86);
+  --bc-label-w:104px;
+  --z-tableFixed:3; --z-select:101; --z-spin:999; --z-modal:1000; --z-toast:1010;
+  --z-popover:1030; --z-dropdown:1050; --z-tooltip:1060; --z-backTop:10;
+  --st-success-icon:#00bb12; --st-success-bg:#e3fae1; --st-success-bd:#9bed98;
+  --st-warn-icon:#fb7701; --st-warn-bg:#fff6e6; --st-warn-bd:#ffdaa3;
+  --st-error-icon:#f71010; --st-error-bg:#ffeae6; --st-error-bd:#ffbdb3;
+  --st-info-icon:#0071f3; --st-info-bg:#e6f6ff; --st-info-bd:#a3daff;
+  --tag-info-c:#0071f3; --tag-info-bg:#e6f6ff; --tag-info-bd:#52aeff;
+  --tag-warn-c:#ff7300; --tag-warn-bg:#fff5e6; --tag-warn-bd:#ffc37a;
+  --tag-danger-c:#f71010; --tag-danger-bg:#fff2f0; --tag-danger-bd:#ffaca6;
+  --tag-success-c:#00b359; --tag-success-bg:#e8fbe5; --tag-success-bd:#00b359;
+  --tag-fail-c:rgba(0,0,0,.4); --tag-fail-bg:#ebebeb; --tag-fail-bd:rgba(0,0,0,.12);
+  --toast-success-shadow:0 2px 8px 0 rgba(0,33,8,.12);
+  --toast-warn-shadow:0 2px 8px 0 rgba(97,66,0,.12);
+  --footer-shadow:0 -4px 24px 6px rgba(0,0,0,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:"PingFang SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:12px;line-height:1.5;color:var(--bc-primaryTextColor);background:var(--bc-shellBg);-webkit-font-smoothing:antialiased}
+a{color:var(--bc-linkColor);text-decoration:none;cursor:pointer}
+a:hover{color:var(--bc-link-hover)}a:active{color:var(--bc-link-active)}
+ul,li{list-style:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+.icon{width:1em;height:1em;display:inline-block;vertical-align:-0.125em;flex:none}
+.icon-line{fill:none;stroke:currentColor}
+.text_bold{font-weight:600;font-size:14px;color:var(--bc-primaryTextColor)}
+.text_regular{font-weight:400;font-size:12px;color:var(--bc-primaryTextColor)}
+.text_gray{color:var(--bc-thirdlyTextColor)}
+.text_warn{color:#fb7701}
+.row{display:flex;align-items:center}.row.wrap{flex-wrap:wrap}
+.flex1{flex:1;min-width:0}.ml-auto{margin-left:auto}
+.gap4{gap:4px}.gap8{gap:8px}.gap12{gap:12px}.gap16{gap:16px}
+.hidden{display:none!important}
+.w-full{width:100%}
+
+/* Layout §12.1 */
+.app{display:flex;min-height:100vh}
+.bc-menu{width:200px;background:#fff;border-right:1px solid var(--bc-divideColor);flex:none;padding:8px 0;position:sticky;top:0;height:100vh;overflow:auto}
+.bc-menu-logo{height:40px;display:flex;align-items:center;gap:8px;padding:0 16px;font-weight:600;font-size:15px}
+.bc-menu-logo .dot{width:18px;height:18px;border-radius:4px;background:var(--bc-themeColor)}
+.bc-menu-group-title{padding:12px 16px 4px;font-size:11px;color:var(--bc-hintTextColor)}
+.bc-menu-item{height:40px;line-height:40px;padding:0 16px;font-size:13px;color:var(--bc-secondaryTextColor);display:flex;align-items:center;gap:8px;position:relative;cursor:pointer}
+.bc-menu-item:hover{background:var(--bc-themeColor1);color:var(--bc-themeColor)}
+.bc-menu-item.active{color:var(--bc-themeColor);font-weight:600;background:var(--bc-themeColor1)}
+.bc-menu-item.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--bc-themeColor)}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--bc-bgColor)}
+.topbar{height:48px;border-bottom:1px solid var(--bc-divideColor);display:flex;align-items:center;padding:0 20px;gap:16px;position:sticky;top:0;z-index:20;background:#fff}
+.bc-breadcrumb{display:flex;align-items:center;gap:6px;font-size:13px}
+.bc-breadcrumb a{color:var(--bc-secondaryTextColor)}
+.bc-breadcrumb a:hover{color:var(--bc-themeColor)}
+.bc-breadcrumb .cur{color:var(--bc-primaryTextColor)}
+.bc-breadcrumb .sep{color:var(--bc-divideColor)}
+.page-root.temu-oms-newon{background:#fff;flex:1;display:flex;flex-direction:column}
+
+/* §5.1 Button */
+.bc-btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;height:var(--bc-h-md);padding:0 12px;border-radius:var(--bc-radius);font-size:14px;font-weight:500;white-space:nowrap;transition:all .2s var(--bc-ease);border:1px solid transparent;line-height:1}
+.bc-btn.sm{height:var(--bc-h-sm);font-size:12px}
+.bc-btn.primary{background:var(--bc-themeColor);color:#fff;border-color:var(--bc-themeColor)}
+.bc-btn.primary:hover{background:var(--bc-themeColor7);border-color:var(--bc-themeColor7)}
+.bc-btn.primary:active{background:var(--bc-themeColor8);border-color:var(--bc-themeColor8)}
+.bc-btn.gray{background:#fff;color:var(--bc-primaryTextColor);border-color:#adadad}
+.bc-btn.gray:hover{border-color:var(--bc-themeColor7);color:var(--bc-themeColor7)}
+.bc-btn.secondary{background:#fff;color:var(--bc-themeColor);border-color:var(--bc-themeColor)}
+.bc-btn.secondary:hover{border-color:var(--bc-themeColor7);color:var(--bc-themeColor7)}
+.bc-btn.danger{background:var(--bc-dangerColor);color:#fff;border-color:var(--bc-dangerColor)}
+.bc-btn.danger:hover{background:var(--bc-danger-hover);border-color:var(--bc-danger-hover)}
+.bc-btn.secondaryDanger{background:#fff;color:var(--bc-dangerColor);border-color:var(--bc-dangerColor)}
+.bc-btn.textPrimary{background:transparent;color:var(--bc-themeColor);border:none;padding:0;font-size:12px}
+.bc-btn.textPrimary:hover{color:var(--bc-themeColor7)}
+.bc-btn.textPrimary.sm{font-size:12px}
+
+/* §5.7 Tag */
+.bc-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border-radius:var(--bc-radius);font-size:12px;line-height:1.5;border:1px solid transparent;white-space:nowrap}
+.bc-tag .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.bc-tag.info{color:var(--tag-info-c);background:var(--tag-info-bg);border-color:var(--tag-info-bd)}
+.bc-tag.warn{color:var(--tag-warn-c);background:var(--tag-warn-bg);border-color:var(--tag-warn-bd)}
+.bc-tag.danger{color:var(--tag-danger-c);background:var(--tag-danger-bg);border-color:var(--tag-danger-bd)}
+.bc-tag.success{color:var(--tag-success-c);background:var(--tag-success-bg);border-color:var(--tag-success-bd)}
+.bc-tag.fail{color:var(--tag-fail-c);background:var(--tag-fail-bg);border-color:var(--tag-fail-bd)}
+.bc-tag.gray{color:var(--bc-secondaryTextColor);background:rgba(0,0,0,.04);border:none}
+
+/* §5.2 Input / §5.4 Select / §5.23 RangePicker */
+.bc-input{height:var(--bc-h-md);border:1px solid var(--bc-borderColor);border-radius:var(--bc-radius);background:#fff;padding:0 8px;font-size:12px;color:var(--bc-primaryTextColor);display:inline-flex;align-items:center;gap:4px;transition:border-color .2s var(--bc-ease),box-shadow .2s var(--bc-ease);min-width:200px}
+.bc-input:hover{border-color:var(--bc-themeColor7)}
+.bc-input.focus{border-color:var(--bc-themeColor);box-shadow:0 0 0 2px var(--bc-boxShadowColor)}
+.bc-input input{border:none;outline:none;flex:1;height:100%;background:transparent;font-size:inherit;color:inherit;min-width:0;font-family:inherit}
+.bc-input input::placeholder{color:var(--bc-hintTextColor)}
+.bc-input .clear-ic{color:var(--bc-icon-color);cursor:pointer;display:none}
+.bc-input.has-val .clear-ic{display:flex}
+.bc-select{position:relative;display:inline-block}
+.bc-select-trigger{height:var(--bc-h-md);min-width:200px;border:1px solid var(--bc-borderColor);border-radius:var(--bc-radius);background:#fff;padding:0 8px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;transition:border-color .2s var(--bc-ease),box-shadow .2s var(--bc-ease);font-size:12px;color:var(--bc-primaryTextColor)}
+.bc-select-trigger:hover{border-color:var(--bc-themeColor7)}
+.bc-select.open .bc-select-trigger{border-color:var(--bc-themeColor);box-shadow:0 0 0 2px var(--bc-boxShadowColor)}
+.bc-select-trigger .val{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bc-select-trigger .val.placeholder{color:var(--bc-hintTextColor)}
+.bc-select-trigger .arrow{color:var(--bc-icon-color);transition:transform .2s var(--bc-ease);display:flex}
+.bc-select.open .bc-select-trigger .arrow{transform:rotate(180deg)}
+.bc-select-panel{position:absolute;top:calc(100% + 4px);left:0;min-width:100%;background:#fff;border:1px solid #e8e8e8;border-radius:var(--bc-radius);box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:var(--z-select);padding:4px;max-height:240px;overflow:auto;display:none}
+.bc-select.open .bc-select-panel{display:block}
+.bc-option{padding:5px 8px;line-height:1.5;font-size:12px;color:var(--bc-primaryTextColor);cursor:pointer;border-radius:4px}
+.bc-option:hover{background:var(--bc-themeColor1)}
+.bc-option.selected{color:var(--bc-themeColor);font-weight:bold}
+.bc-rangepicker{height:var(--bc-h-md);border:1px solid var(--bc-borderColor);border-radius:var(--bc-radius);background:#fff;display:inline-flex;align-items:center;padding:0 8px;cursor:pointer;transition:border-color .2s var(--bc-ease),box-shadow .2s var(--bc-ease);min-width:260px;font-size:12px}
+.bc-rangepicker:hover{border-color:var(--bc-themeColor7)}
+.bc-rangepicker .cal-icon{color:var(--bc-icon-color);margin-right:6px}
+.bc-rangepicker .rp-input{min-width:90px;text-align:center}
+.bc-rangepicker .rp-sep{color:var(--bc-thirdlyTextColor);padding:0 4px}
+
+/* §5.5 Checkbox / Switch */
+.bc-checkbox{display:inline-flex;align-items:center;gap:4px;cursor:pointer;user-select:none}
+.bc-checkbox input{width:0;height:0;opacity:0;position:absolute}
+.bc-checkbox .box{width:14px;height:14px;border:1px solid var(--bc-borderColor);border-radius:2px;background:#fff;display:inline-flex;align-items:center;justify-content:center;flex:none;transition:all .15s var(--bc-ease);color:#fff}
+.bc-checkbox:hover .box{border-color:var(--bc-themeColor7)}
+.bc-checkbox.checked .box{background:var(--bc-themeColor);border-color:var(--bc-themeColor)}
+.bc-checkbox .box .icon{width:10px;height:10px;display:none}
+.bc-checkbox.checked .box .icon{display:inline-block}
+.bc-switch{display:inline-flex;align-items:center;cursor:pointer}
+.bc-switch .track{width:48px;height:24px;border-radius:12px;background:var(--bc-borderColor);position:relative;transition:background .2s var(--bc-ease)}
+.bc-switch .thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s var(--bc-ease);box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.bc-switch.on .track{background:var(--bc-themeColor)}
+.bc-switch.on .thumb{left:27px}
+
+/* §5.3 Form */
+.bc-form{display:flex;flex-wrap:wrap;gap:16px 24px}
+.bc-form-item{display:flex;align-items:flex-start;min-width:0}
+.bc-form-item .label{width:var(--bc-label-w);text-align:right;line-height:28px;color:var(--bc-secondaryTextColor);margin-right:16px;flex:none;font-size:12px;white-space:nowrap}
+.bc-form-item .label .req{color:var(--bc-dangerColor);margin-right:2px}
+.bc-form-item .ctrl{min-width:200px}
+.bc-form-item.collapsed{display:none}
+
+/* §5.16 Tab */
+.bc-tabs{display:flex;align-items:center}
+.bc-tabs.line{border-bottom:1px solid var(--bc-divideColor)}
+.bc-tab{cursor:pointer;position:relative;color:var(--bc-secondaryTextColor);transition:color .2s var(--bc-ease)}
+.bc-tabs.line .bc-tab{font-size:16px;padding:0 12px;height:40px;line-height:40px;font-weight:400}
+.bc-tabs.line .bc-tab:hover{color:var(--bc-themeColor)}
+.bc-tabs.line .bc-tab.active{color:var(--bc-themeColor)}
+.bc-tabs.line .bc-tab.active::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;background:var(--bc-themeColor);border-radius:1px}
+.bc-tabs.capsule .bc-tab{font-size:12px;padding:7px 16px;border:1px solid var(--bc-borderColor);border-radius:0;color:var(--bc-primaryTextColor)}
+.bc-tabs.capsule .bc-tab+.bc-tab{border-left:none}
+.bc-tabs.capsule .bc-tab.active{color:var(--bc-themeColor);border-top:2px solid var(--bc-themeColor);margin-top:-1px}
+
+/* §9.4 状态标签页 */
+.status-tabs{display:flex;align-items:center;gap:24px;padding:0 20px;height:44px;border-bottom:1px solid var(--bc-divideColor)}
+.status-tab{display:flex;align-items:center;font-size:16px;font-weight:400;color:var(--bc-secondaryTextColor);cursor:pointer;height:100%;position:relative}
+.status-tab .num{margin-left:4px;font-weight:400}
+.status-tab:hover{color:var(--bc-themeColor)}
+.status-tab.active{color:var(--bc-themeColor)}
+.status-tab.active::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--bc-themeColor)}
+
+/* §9.13 快筛预设条 */
+.quick-fields{background:#f7f7f7;padding:8px 24px 8px 8px;border-radius:6px 6px 0 0;display:flex;align-items:center;justify-content:space-between;margin:0 20px}
+.quick-fields-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.quick-fields-label{width:var(--bc-label-w);text-align:right;font-size:12px;color:var(--bc-primaryTextColor);flex:none}
+.quick-fields-right{display:flex;align-items:center;gap:12px}
+
+/* §9.14 快捷统计卡片 */
+.quick-cards{background:#f7f7f7;padding:16px 8px;border-bottom:1px solid rgba(0,0,0,.08);margin:0 20px;display:flex;align-items:center;flex-wrap:wrap;min-height:72px;border-radius:6px 6px 0 0}
+.quick-cards-label{font-size:12px;color:var(--bc-primaryTextColor);margin-right:8px}
+.quick-card{width:192px;min-width:192px;max-width:192px;height:40px;border:1px solid rgba(0,0,0,.14);border-radius:var(--bc-radius);background:#fff;font-size:12px;color:var(--bc-primaryTextColor);display:flex;align-items:center;justify-content:center;cursor:pointer;margin-left:8px;transition:all .15s var(--bc-ease)}
+.quick-card:hover{border-color:var(--bc-themeColor7);color:var(--bc-themeColor7)}
+.quick-card.active{border-color:var(--bc-themeColor);background:var(--bc-themeColor1);color:var(--bc-themeColor);font-weight:600}
+
+/* §12.1 筛选区 */
+.search-block{padding:16px 20px 4px}
+.search-actions{display:flex;align-items:center;gap:8px;padding:12px 0;flex-wrap:wrap}
+.expand-toggle{display:inline-flex;align-items:center;gap:4px;margin-left:12px;font-size:12px;color:var(--bc-primaryTextColor);cursor:pointer}
+.expand-badge{width:20px;height:20px;border-radius:50%;background:var(--bc-themeColor);color:#fff;font-size:12px;display:inline-flex;align-items:center;justify-content:center}
+.expand-toggle .arrow-icon{color:var(--bc-icon-color);transition:transform .2s var(--bc-ease)}
+.expand-toggle.collapsed .arrow-icon{transform:rotate(180deg)}
+
+/* §5.22 NoticeBar */
+.bc-noticebar{display:flex;align-items:flex-start;gap:8px;padding:8px 16px;border-radius:var(--bc-toastRadius);font-size:12px;line-height:1.5;margin:12px 20px 0}
+.bc-noticebar.info{background:var(--st-info-bg);border:1px solid var(--st-info-bd)}
+.bc-noticebar.info .nb-icon{color:var(--st-info-icon);font-size:16px;flex:none;margin-top:1px}
+.bc-noticebar .nb-content{flex:1}
+.bc-noticebar .nb-close{color:var(--bc-icon-color);cursor:pointer;font-size:16px;flex:none}
+.bc-noticebar .nb-close:hover{color:var(--bc-icon-hoverColor)}
+
+/* §12.1 操作栏 */
+.action-bar{display:flex;align-items:center;gap:10px;padding:12px 20px;flex-wrap:wrap}
+.bc-divider.vertical{width:1px;height:0.9em;border:none;border-left:1px solid var(--bc-divideColor);margin:0 8px;display:inline-block;vertical-align:middle}
+.bc-dropdown{position:relative;display:inline-block}
+.bc-dropdown .menu{position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid #eee;border-radius:var(--bc-radius);box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:var(--z-dropdown);min-width:140px;padding:4px;display:none}
+.bc-dropdown.open .menu{display:block}
+.bc-dropdown .menu-item{padding:6px 12px;font-size:12px;color:var(--bc-primaryTextColor);cursor:pointer;border-radius:4px}
+.bc-dropdown .menu-item:hover{background:var(--bc-themeColor1);color:var(--bc-themeColor)}
+.bc-dropdown .menu-item.danger{color:var(--bc-dangerColor)}
+.bc-dropdown .menu-item.danger:hover{background:#fff2f0}
+
+/* §5.10 Table */
+.bc-table-wrap{overflow:auto;position:relative;flex:1}
+.bc-table{width:100%;border-collapse:collapse;font-size:12px}
+.bc-table thead th{background:#f5f5f5;color:var(--bc-primaryTextColor);font-weight:500;line-height:18px;padding:9px 12px;text-align:left;border-bottom:1px solid var(--bc-divideColor);white-space:nowrap;position:sticky;top:0;z-index:var(--z-tableFixed)}
+.bc-table tbody td{padding:9px 12px;border-bottom:1px solid var(--bc-divideColor);vertical-align:top}
+.bc-table tbody tr:hover td{background:var(--bc-tableHover)}
+.bc-table tbody tr.selected td{background:var(--bc-tableHover)}
+.th-sort{cursor:pointer;display:inline-flex;align-items:center;gap:2px}
+.th-sort .sort-ic{color:var(--bc-icon-color);display:flex;flex-direction:column;font-size:8px;line-height:8px}
+.th-sort.asc .sort-ic .up,.th-sort.desc .sort-ic .down{color:var(--bc-themeColor)}
+
+/* §9.6 商品卡片 + §9.15 图片角标 */
+.goods-cell{display:flex;gap:12px;align-items:flex-start}
+.goods-thumb{width:56px;height:56px;border-radius:var(--bc-radius);background:#f5f5f5;flex:none;position:relative;overflow:hidden;cursor:pointer;border:1px solid var(--bc-divideColor)}
+.goods-thumb img{width:100%;height:100%;object-fit:cover}
+.goods-thumb .img-badge{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.34);color:#fff;font-size:12px;text-align:center;line-height:18px}
+.goods-card{font-size:12px;line-height:18px;min-width:0}
+.goods-card .gc-title{color:var(--bc-primaryTextColor);font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.goods-card .gc-desc{color:var(--bc-secondaryTextColor);margin-top:2px}
+.goods-card .gc-tags{margin-top:4px;display:flex;flex-wrap:wrap;gap:4px}
+.goods-card .gc-extra{border-top:1px dashed rgba(0,0,0,.32);padding-top:6px;margin-top:6px;color:var(--bc-secondaryTextColor)}
+.price-main{font-weight:600;color:var(--bc-primaryTextColor);font-size:13px}
+.price-sub{color:var(--bc-thirdlyTextColor);font-size:11px;margin-top:2px}
+.stock-low{color:var(--bc-warnColor)}
+.stock-out{color:var(--bc-dangerColor)}
+
+/* §5.17 Pagination */
+.bc-pagination{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:12px 20px;height:var(--bc-h-md)}
+.bc-pagination .total{font-weight:400;color:var(--bc-secondaryTextColor);margin-right:auto;font-size:12px}
+.pg-item{min-width:var(--bc-h-md);height:var(--bc-h-md);display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--bc-borderColor);border-radius:var(--bc-radius);background:#fff;color:var(--bc-primaryTextColor);cursor:pointer;font-size:12px;padding:0 4px;transition:all .15s var(--bc-ease)}
+.pg-item:hover{color:var(--bc-themeColor7);border-color:var(--bc-themeColor7)}
+.pg-item.active{background:var(--bc-themeColor);color:#fff;border-color:var(--bc-themeColor)}
+.pg-item.disabled{color:rgba(0,0,0,.14);border-color:#ccc;cursor:not-allowed}
+.pg-item.disabled:hover{color:rgba(0,0,0,.14);border-color:#ccc}
+.pg-jump{color:var(--bc-icon-color)}
+.pg-size{margin-right:12px}
+
+/* §9.10 底部固定操作栏 */
+.footer-block{position:sticky;bottom:0;z-index:101;background:#fff;padding:12px 20px;margin:0 -20px;box-shadow:var(--footer-shadow)}
+
+/* §5.11 Modal */
+.bc-modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:var(--z-modal);display:none;align-items:flex-start;justify-content:center;padding-top:8vh}
+.bc-modal-mask.show{display:flex}
+.bc-modal{background:#fff;border-radius:var(--bc-radius);min-width:320px;max-width:92vw;display:flex;flex-direction:column;animation:modalIn .2s var(--bc-ease)}
+@keyframes modalIn{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+.bc-modal-head{padding:8px 12px;font-size:16px;font-weight:500;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bc-divideColor)}
+.bc-modal-head .close{color:var(--bc-icon-color);cursor:pointer}
+.bc-modal-head .close:hover{color:var(--bc-icon-hoverColor)}
+.bc-modal-body{padding:24px 24px 20px;font-size:12px;line-height:20px}
+.bc-modal-foot{padding:12px 24px;display:flex;justify-content:flex-end;gap:13px;border-top:1px solid var(--bc-divideColor)}
+
+/* §9.5 Drawer */
+.bc-drawer-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:var(--z-modal);display:none}
+.bc-drawer-mask.show{display:block}
+.bc-drawer{position:fixed;top:0;right:0;height:100vh;width:calc(100vw - 32px);max-width:2488px;min-width:900px;background:#fff;z-index:calc(var(--z-modal) + 1);transform:translateX(100%);transition:transform .25s var(--bc-ease);display:flex;flex-direction:column}
+.bc-drawer.show{transform:translateX(0)}
+.bc-drawer-head{height:48px;padding:0 16px 0 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bc-divideColor);font-size:15px;font-weight:500}
+.bc-drawer-head .close{color:var(--bc-icon-color);cursor:pointer}
+.bc-drawer-head .close:hover{color:var(--bc-icon-hoverColor)}
+.bc-drawer-body{flex:1;overflow:auto;padding:24px;min-width:800px}
+.bc-drawer-foot{padding:12px 24px;border-top:1px solid var(--bc-divideColor);display:flex;justify-content:flex-end;gap:13px;position:sticky;bottom:0;background:#fff}
+.drawer-left-img{width:228px;flex:none}
+.drawer-grey-block{background:rgba(0,0,0,.04);border-radius:var(--bc-radius);padding:16px}
+.status-block{border-radius:var(--bc-radius);padding:12px;display:flex;align-items:flex-start;position:relative;margin-bottom:16px}
+.status-block .sb-icon{font-size:14px;position:absolute;right:12px;top:12px}
+.status-block .sb-content{font-size:12px;color:var(--bc-secondaryTextColor)}
+.status-block .sb-strong{font-size:13px;font-weight:600;margin-bottom:2px}
+.status-block.needConfirm{background:var(--st-warn-bg);border:1px solid var(--st-warn-bd)}
+.status-block.needConfirm .sb-strong,.status-block.needConfirm .sb-icon{color:#fb7701}
+.status-block.alreadyConfirm{background:var(--st-success-bg);border:1px solid var(--st-success-bd)}
+.status-block.alreadyConfirm .sb-strong,.status-block.alreadyConfirm .sb-icon{color:#00bb12}
+.preview-panel{width:350px;border:1px solid var(--bc-divideColor);border-radius:var(--bc-radius);flex:none}
+.preview-panel .pp-head{height:40px;padding:0 12px;display:flex;align-items:center;font-size:12px;border-bottom:1px solid rgba(0,0,0,.2)}
+.preview-panel .pp-view{height:320px;overflow:auto;padding:8px}
+.preview-panel .pp-img{width:100%;min-height:280px;background:#f5f5f5;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--bc-icon-color)}
+
+/* §5.12 Toast */
+.bc-toast-wrap{position:fixed;top:56px;left:50%;transform:translateX(-50%);z-index:var(--z-toast);display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.bc-toast{display:flex;align-items:flex-start;gap:8px;padding:10px 16px;border-radius:var(--bc-toastRadius);font-size:14px;max-width:766px;border:1px solid transparent;animation:toastIn .3s cubic-bezier(0.55,0,0.55,0.2)}
+@keyframes toastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.bc-toast.success{background:var(--st-success-bg);border-color:var(--st-success-bd);box-shadow:var(--toast-success-shadow)}
+.bc-toast.success .t-icon{color:var(--st-success-icon)}
+.bc-toast.warn{background:var(--st-warn-bg);border-color:var(--st-warn-bd);box-shadow:var(--toast-warn-shadow)}
+.bc-toast.warn .t-icon{color:var(--st-warn-icon)}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-info" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 64C264.8 64 64 264.8 64 512s200.8 448 448 448 448-200.8 448-448S759.2 64 512 64z"/><circle fill="#fff" cx="512" cy="312" r="46"/><rect fill="#fff" x="466" y="404" width="92" height="320" rx="46"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 64C264.8 64 64 264.8 64 512s200.8 448 448 448 448-200.8 448-448S759.2 64 512 64z"/><rect fill="#fff" x="466" y="270" width="92" height="360" rx="46"/><circle fill="#fff" cx="512" cy="722" r="50"/></symbol>
+  <symbol id="i-success" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 64C264.8 64 64 264.8 64 512s200.8 448 448 448 448-200.8 448-448S759.2 64 512 64z"/><polyline fill="none" stroke="#fff" stroke-width="84" stroke-linecap="round" stroke-linejoin="round" points="372,542 470,650 680,372"/></symbol>
+  <symbol id="i-down" viewBox="0 0 1024 1024"><polyline class="icon-line" stroke-width="88" stroke-linecap="round" stroke-linejoin="round" points="250,380 512,642 774,380"/></symbol>
+  <symbol id="i-left" viewBox="0 0 1024 1024"><polyline class="icon-line" stroke-width="88" stroke-linecap="round" stroke-linejoin="round" points="644,250 382,512 644,774"/></symbol>
+  <symbol id="i-right" viewBox="0 0 1024 1024"><polyline class="icon-line" stroke-width="88" stroke-linecap="round" stroke-linejoin="round" points="380,250 642,512 380,774"/></symbol>
+  <symbol id="i-check" viewBox="0 0 1024 1024"><polyline class="icon-line" stroke-width="80" stroke-linecap="round" stroke-linejoin="round" points="270,540 432,702 760,300"/></symbol>
+  <symbol id="i-close" viewBox="0 0 1024 1024"><polyline class="icon-line" stroke-width="80" stroke-linecap="round" points="300,300 724,724"/><polyline class="icon-line" stroke-width="80" stroke-linecap="round" points="724,300 300,724"/></symbol>
+  <symbol id="i-search" viewBox="0 0 1024 1024"><circle class="icon-line" stroke-width="72" cx="450" cy="450" r="250"/><line class="icon-line" stroke-width="72" stroke-linecap="round" x1="640" y1="640" x2="820" y2="820"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 1024 1024"><line class="icon-line" stroke-width="80" stroke-linecap="round" x1="512" y1="240" x2="512" y2="784"/><line class="icon-line" stroke-width="80" stroke-linecap="round" x1="240" y1="512" x2="784" y2="512"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 1024 1024"><path class="icon-line" stroke-width="72" stroke-linecap="round" stroke-linejoin="round" d="M240 512a272 272 0 0 1 464-192"/><path class="icon-line" stroke-width="72" stroke-linecap="round" stroke-linejoin="round" d="M784 512a272 272 0 0 1-464 192"/><polyline class="icon-line" stroke-width="72" stroke-linecap="round" stroke-linejoin="round" points="704,200 704,360 544,360"/><polyline class="icon-line" stroke-width="72" stroke-linecap="round" stroke-linejoin="round" points="320,824 320,664 480,664"/></symbol>
+  <symbol id="i-export" viewBox="0 0 1024 1024"><path class="icon-line" stroke-width="72" stroke-linecap="round" stroke-linejoin="round" d="M544 128H224a48 48 0 0 0-48 48v672a48 48 0 0 0 48 48h576a48 48 0 0 0 48-48V448"/><polyline class="icon-line" stroke-width="72" stroke-linecap="round" stroke-linejoin="round" points="672,128 896,128 896,352"/><line class="icon-line" stroke-width="72" stroke-linecap="round" x1="544" y1="480" x2="896" y2="128"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 1024 1024"><rect class="icon-line" stroke-width="72" x="160" y="192" width="704" height="640" rx="40"/><line class="icon-line" stroke-width="72" stroke-linecap="round" x1="160" y1="384" x2="864" y2="384"/><line class="icon-line" stroke-width="72" stroke-linecap="round" x1="352" y1="96" x2="352" y2="288"/><line class="icon-line" stroke-width="72" stroke-linecap="round" x1="672" y1="96" x2="672" y2="288"/></symbol>
+  <symbol id="i-up" viewBox="0 0 1024 1024"><polyline class="icon-line" stroke-width="88" stroke-linecap="round" stroke-linejoin="round" points="250,644 512,382 774,644"/></symbol>
+</svg>
+
+<div class="app">
+  <aside class="bc-menu">
+    <div class="bc-menu-logo"><span class="dot"></span>OMS 控制台</div>
+    <div class="bc-menu-group-title">商品管理</div>
+    <div class="bc-menu-item active">商品列表</div>
+    <div class="bc-menu-item">类目管理</div>
+    <div class="bc-menu-item">品牌管理</div>
+    <div class="bc-menu-item">规格属性</div>
+    <div class="bc-menu-group-title">生命周期</div>
+    <div class="bc-menu-item">停滞品管理</div>
+    <div class="bc-menu-item">开款价格管理</div>
+    <div class="bc-menu-group-title">系统</div>
+    <div class="bc-menu-item">操作日志</div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <nav class="bc-breadcrumb">
+        <a href="#">首页</a><span class="sep">/</span>
+        <a href="#">商品管理</a><span class="sep">/</span>
+        <span class="cur">商品列表</span>
+      </nav>
+      <div class="ml-auto row gap8">
+        <button class="bc-btn gray sm" id="btn-refresh"><svg class="icon"><use href="#i-refresh"/></svg>刷新</button>
+      </div>
+    </div>
+
+    <div class="page-root temu-oms-newon">
+      <!-- ① 顶部业务 Tabs -->
+      <div class="bc-tabs line" style="padding:0 20px">
+        <div class="bc-tab active" data-biz-tab>全托管</div>
+        <div class="bc-tab" data-biz-tab>半托管</div>
+        <div class="bc-tab" data-biz-tab>本本</div>
+        <div class="bc-tab" data-biz-tab>高分品牌</div>
+      </div>
+
+      <!-- 状态胶囊组 -->
+      <div style="padding:12px 20px 0;display:flex;align-items:center;gap:16px">
+        <div class="bc-tabs capsule">
+          <div class="bc-tab active" data-capsule-tab>默认筛选</div>
+          <div class="bc-tab" data-capsule-tab>精准查询</div>
+        </div>
+      </div>
+
+      <!-- 状态标签页（带数字统计）§9.4 -->
+      <div class="status-tabs" id="status-tabs">
+        <div class="status-tab active" data-status="all">全部<span class="num">(12856)</span></div>
+        <div class="status-tab" data-status="onsale">在售<span class="num">(9821)</span></div>
+        <div class="status-tab" data-status="pending">待审核<span class="num">(432)</span></div>
+        <div class="status-tab" data-status="wait">待上架<span class="num">(186)</span></div>
+        <div class="status-tab" data-status="offsale">已下架<span class="num">(2103)</span></div>
+        <div class="status-tab" data-status="violation">违规下架<span class="num">(314)</span></div>
+      </div>
+
+      <!-- ①.5 快筛预设条 §9.13 -->
+      <div class="quick-fields" style="margin-top:12px">
+        <div class="quick-fields-left">
+          <span class="quick-fields-label">快速筛选</span>
+          <button class="bc-btn gray sm" data-quick-filter>华东仓在售</button>
+          <button class="bc-btn gray sm" data-quick-filter>低库存预警</button>
+          <button class="bc-btn gray sm" data-quick-filter>待补图商品</button>
+          <button class="bc-btn gray sm" data-quick-filter>本周上新</button>
+        </div>
+        <div class="quick-fields-right">
+          <button class="bc-btn textPrimary sm">保存为快筛</button>
+          <button class="bc-btn textPrimary sm">快筛管理</button>
+        </div>
+      </div>
+
+      <!-- 快捷统计卡片 §9.14 -->
+      <div class="quick-cards">
+        <span class="quick-cards-label">审核超时预警：</span>
+        <div class="quick-card" data-quick-card>即将超期 (28)</div>
+        <div class="quick-card active" data-quick-card>已超期 (12)</div>
+        <div class="quick-card" data-quick-card>超期作废 (3)</div>
+      </div>
+
+      <!-- ② 筛选条件区 -->
+      <div class="search-block">
+        <div class="bc-form" id="search-form">
+          <div class="bc-form-item">
+            <div class="label">商品名称</div>
+            <div class="ctrl">
+              <div class="bc-input" style="min-width:240px">
+                <svg class="icon" style="color:var(--bc-icon-color)"><use href="#i-search"/></svg>
+                <input placeholder="请输入商品名称/关键词" id="input-goods-name" />
+              </div>
+            </div>
+          </div>
+          <div class="bc-form-item">
+            <div class="label"><span class="req">*</span>商品 ID</div>
+            <div class="ctrl">
+              <div class="bc-input" style="min-width:200px">
+                <input placeholder="SPU / SKC / SKU ID" />
+              </div>
+            </div>
+          </div>
+          <div class="bc-form-item">
+            <div class="label">商品类目</div>
+            <div class="ctrl">
+              <div class="bc-select" data-select>
+                <div class="bc-select-trigger"><span class="val placeholder">请选择类目</span><span class="arrow"><svg class="icon"><use href="#i-down"/></svg></span></div>
+                <div class="bc-select-panel">
+                  <div class="bc-option">服饰鞋包</div>
+                  <div class="bc-option">家居生活</div>
+                  <div class="bc-option">数码电器</div>
+                  <div class="bc-option">美妆个护</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="bc-form-item">
+            <div class="label">品牌</div>
+            <div class="ctrl">
+              <div class="bc-select" data-select>
+                <div class="bc-select-trigger"><span class="val placeholder">请选择品牌</span><span class="arrow"><svg class="icon"><use href="#i-down"/></svg></span></div>
+                <div class="bc-select-panel">
+                  <div class="bc-option">自有品牌</div>
+                  <div class="bc-option">授权品牌</div>
+                  <div class="bc-option">无品牌</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="bc-form-item collapsed" data-collapsible>
+            <div class="label">店铺名称</div>
+            <div class="ctrl">
+              <div class="bc-input" style="min-width:200px"><input placeholder="请输入店铺名称" /></div>
+            </div>
+          </div>
+          <div class="bc-form-item collapsed" data-collapsible>
+            <div class="label">上架状态</div>
+            <div class="ctrl">
+              <div class="bc-select" data-select>
+                <div class="bc-select-trigger"><span class="val placeholder">全部状态</span><span class="arrow"><svg class="icon"><use href="#i-down"/></svg></span></div>
+                <div class="bc-select-panel">
+                  <div class="bc-option">在售</div>
+                  <div class="bc-option">待审核</div>
+                  <div class="bc-option">待上架</div>
+                  <div class="bc-option">已下架</div>
+                  <div class="bc-option">违规下架</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="bc-form-item collapsed" data-collapsible>
+            <div class="label">创建时间</div>
+            <div class="ctrl">
+              <div class="bc-rangepicker" data-rangepicker>
+                <svg class="icon cal-icon"><use href="#i-cal"/></svg>
+                <span class="rp-input text_gray">开始日期</span>
+                <span class="rp-sep">~</span>
+                <span class="rp-input text_gray">结束日期</span>
+              </div>
+            </div>
+          </div>
+          <div class="bc-form-item collapsed" data-collapsible>
+            <div class="label">仅看缺货</div>
+            <div class="ctrl" style="line-height:28px">
+              <div class="bc-switch" data-switch><div class="track"><div class="thumb"></div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="search-actions">
+          <button class="bc-btn primary" id="btn-search"><svg class="icon"><use href="#i-search"/></svg>查询</button>
+          <button class="bc-btn gray" id="btn-reset"><svg class="icon"><use href="#i-refresh"/></svg>重置</button>
+          <a href="#" style="line-height:28px">保存快照</a>
+          <span class="expand-toggle collapsed" id="expand-toggle">
+            <span class="expand-badge" id="expand-badge">4</span>
+            <span id="expand-text">展开</span>
+            <svg class="icon arrow-icon"><use href="#i-down"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <!-- ③ 业务提示条 -->
+      <div class="bc-noticebar info" id="notice-bar">
+        <svg class="icon nb-icon"><use href="#i-info"/></svg>
+        <div class="nb-content">列表默认展示近 90 天创建的商品，单次最多导出 5000 条。违规下架商品需在 7 个工作日内完成整改申诉，逾期将自动作废。</div>
+        <svg class="icon nb-close" id="notice-close"><use href="#i-close"/></svg>
+      </div>
+
+      <!-- ④ 批量操作与工具栏 -->
+      <div class="action-bar">
+        <button class="bc-btn primary" id="btn-new-goods"><svg class="icon"><use href="#i-plus"/></svg>新建商品</button>
+        <button class="bc-btn gray">批量上架</button>
+        <button class="bc-btn gray">批量下架</button>
+        <button class="bc-btn gray"><svg class="icon"><use href="#i-export"/></svg>批量导出</button>
+        <button class="bc-btn gray">导入商品</button>
+        <div class="bc-dropdown" data-dropdown>
+          <button class="bc-btn gray">更多操作<svg class="icon" style="margin-left:2px"><use href="#i-down"/></svg></button>
+          <div class="menu">
+            <div class="menu-item">同步库存</div>
+            <div class="menu-item">批量改价</div>
+            <div class="menu-item">复制商品链接</div>
+            <div class="menu-item danger">批量删除</div>
+          </div>
+        </div>
+        <div class="ml-auto row gap8">
+          <a href="#">查询操作记录</a>
+          <span class="bc-divider vertical"></span>
+          <a href="#">一键复制所选 ID</a>
+        </div>
+      </div>
+
+      <!-- ⑤ 数据表格与分页 -->
+      <div class="bc-table-wrap">
+        <table class="bc-table" id="goods-table">
+          <thead>
+            <tr>
+              <th style="width:40px"><label class="bc-checkbox" id="check-all"><span class="box"><svg class="icon"><use href="#i-check"/></svg></span></label></th>
+              <th style="width:280px"><span class="th-sort desc">商品信息<span class="sort-ic"><span class="up">▲</span><span class="down">▼</span></span></span></th>
+              <th>类目 / 品牌</th>
+              <th>售价</th>
+              <th>库存</th>
+              <th>状态</th>
+              <th>店铺</th>
+              <th>上架时间</th>
+              <th style="width:140px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="goods-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="bc-pagination">
+        <span class="total" id="pg-total">共 12856 条</span>
+        <span class="pg-size">
+          <span class="bc-select" data-select>
+            <span class="bc-select-trigger" style="height:28px;min-width:96px"><span class="val">20 条/页</span><span class="arrow"><svg class="icon"><use href="#i-down"/></svg></span></span>
+            <div class="bc-select-panel">
+              <div class="bc-option">10 条/页</div>
+              <div class="bc-option selected">20 条/页</div>
+              <div class="bc-option">50 条/页</div>
+              <div class="bc-option">100 条/页</div>
+            </div>
+          </span>
+        </span>
+        <span class="pg-item pg-jump">«</span>
+        <span class="pg-item disabled"><svg class="icon"><use href="#i-left"/></svg></span>
+        <span class="pg-item active">1</span>
+        <span class="pg-item">2</span>
+        <span class="pg-item">3</span>
+        <span class="pg-item">…</span>
+        <span class="pg-item">643</span>
+        <span class="pg-item"><svg class="icon"><use href="#i-right"/></svg></span>
+        <span class="pg-item pg-jump">»</span>
+        <span style="font-size:12px;color:var(--bc-secondaryTextColor)">前往 <input class="bc-input" style="height:28px;width:48px;min-width:48px;text-align:center;padding:0" value="1"/> 页</span>
+      </div>
+
+      <div class="footer-block">
+        <div class="row gap8">
+          <span class="text_regular">已选择 <span class="text_bold" style="color:var(--bc-themeColor)" id="selected-count">0</span> 项</span>
+          <span class="bc-divider vertical"></span>
+          <span class="text_gray">共 12856 条记录</span>
+          <div class="ml-auto row gap8">
+            <button class="bc-btn gray" id="btn-clear-select">取消选择</button>
+            <button class="bc-btn primary" id="btn-batch-export">批量导出</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- 新建商品 Modal -->
+<div class="bc-modal-mask" id="modal-new">
+  <div class="bc-modal" style="width:560px">
+    <div class="bc-modal-head">
+      <span>新建商品</span>
+      <span class="close" data-close-modal><svg class="icon"><use href="#i-close"/></svg></span>
+    </div>
+    <div class="bc-modal-body">
+      <div class="bc-form" style="flex-direction:column;gap:16px">
+        <div class="bc-form-item" style="width:100%">
+          <div class="label" style="width:104px"><span class="req">*</span>商品名称</div>
+          <div class="ctrl" style="flex:1">
+            <div class="bc-input w-full"><input placeholder="请输入商品名称" /></div>
+          </div>
+        </div>
+        <div class="bc-form-item" style="width:100%">
+          <div class="label" style="width:104px"><span class="req">*</span>商品类目</div>
+          <div class="ctrl" style="flex:1">
+            <div class="bc-select w-full" data-select>
+              <div class="bc-select-trigger w-full" style="width:100%"><span class="val placeholder">请选择类目</span><span class="arrow"><svg class="icon"><use href="#i-down"/></svg></span></div>
+              <div class="bc-select-panel">
+                <div class="bc-option">服饰鞋包</div>
+                <div class="bc-option">家居生活</div>
+                <div class="bc-option">数码电器</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bc-form-item" style="width:100%">
+          <div class="label" style="width:104px">品牌</div>
+          <div class="ctrl" style="flex:1">
+            <div class="bc-input w-full"><input placeholder="请输入品牌名称（选填）" /></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bc-modal-foot">
+      <button class="bc-btn gray" data-close-modal>取消</button>
+      <button class="bc-btn primary" data-toast="success" data-toast-msg="商品创建成功" data-close-modal>确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 商品详情 Drawer -->
+<div class="bc-drawer-mask" id="drawer-mask"></div>
+<div class="bc-drawer" id="drawer-detail">
+  <div class="bc-drawer-head">
+    <span id="drawer-title">商品销售信息</span>
+    <span class="close" data-close-drawer><svg class="icon"><use href="#i-close"/></svg></span>
+  </div>
+  <div class="bc-drawer-body">
+    <div class="status-block needConfirm">
+      <div class="sb-content">
+        <div class="sb-strong">待确认：商品主图需补充</div>
+        <div>当前主图分辨率低于平台要求（800×800），请上传高清图片后重新提交审核。</div>
+      </div>
+      <svg class="icon sb-icon"><use href="#i-warn"/></svg>
+    </div>
+    <div class="row gap16" style="align-items:flex-start">
+      <div class="drawer-left-img">
+        <div class="goods-thumb" style="width:228px;height:228px;border-radius:var(--bc-radius)">
+          <img id="drawer-img" src="" alt="" />
+          <span class="img-badge" id="drawer-img-badge">共5张</span>
+        </div>
+      </div>
+      <div class="flex1">
+        <div class="text_bold" style="font-size:16px;margin-bottom:8px" id="drawer-name"></div>
+        <div class="drawer-grey-block" style="margin-bottom:16px">
+          <div class="row" style="margin-bottom:8px"><span class="text_gray" style="width:110px">SPU ID</span><span id="drawer-spu"></span></div>
+          <div class="row" style="margin-bottom:8px"><span class="text_gray" style="width:110px">SKC ID</span><span id="drawer-skc"></span></div>
+          <div class="row" style="margin-bottom:8px"><span class="text_gray" style="width:110px">类目</span><span id="drawer-cat"></span></div>
+          <div class="row"><span class="text_gray" style="width:110px">状态</span><span id="drawer-status"></span></div>
+        </div>
+        <div class="goods-card">
+          <div class="gc-title">SKU 规格</div>
+          <div class="gc-desc" id="drawer-sku-info">共 12 个 SKU · 黑色/白色/灰色 × S/M/L/XL</div>
+          <div class="gc-extra"><span class="text_gray">最近更新：</span>2026-07-31 10:32 · <a href="#">查看全部规格</a></div>
+        </div>
+      </div>
+      <div class="preview-panel">
+        <div class="pp-head"><span>商品图片预览</span><span class="ml-auto text_gray">1/5</span></div>
+        <div class="pp-view"><div class="pp-img"><svg class="icon" style="font-size:40px"><use href="#i-export"/></svg></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="bc-drawer-foot">
+    <button class="bc-btn gray" data-close-drawer>关闭</button>
+    <button class="bc-btn secondary">编辑商品</button>
+    <button class="bc-btn primary" data-toast="success" data-toast-msg="已提交审核">提交审核</button>
+  </div>
+</div>
+
+<div class="bc-toast-wrap" id="toast-wrap"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  var GOODS_DATA = [
+    { id:1, name:'无线蓝牙耳机 Pro Max 降噪版', spu:'1002547896', skc:'SKC-882910', cat:'数码电器', brand:'SoundMax', price:'¥ 129.00', cost:'成本 ¥ 68.00', stock:2580, status:'onsale', statusText:'在售', shop:'华东旗舰店', time:'2026-07-28 14:20', img:'https://picsum.photos/seed/g1/112/112', imgCount:5, tags:['VMI','热销'] },
+    { id:2, name:'夏季纯棉短袖T恤 男女同款', spu:'1002547897', skc:'SKC-882911', cat:'服饰鞋包', brand:'棉语', price:'¥ 39.90', cost:'成本 ¥ 18.50', stock:42, status:'onsale', statusText:'在售', shop:'服饰专营店', time:'2026-07-27 09:15', img:'https://picsum.photos/seed/g2/112/112', imgCount:8, tags:['夏','棉质'], stockWarn:true },
+    { id:3, name:'智能手环运动监测 心率血氧', spu:'1002547898', skc:'SKC-882912', cat:'数码电器', brand:'FitLife', price:'¥ 199.00', cost:'成本 ¥ 95.00', stock:0, status:'offsale', statusText:'已下架', shop:'数码优选店', time:'2026-07-25 16:40', img:'https://picsum.photos/seed/g3/112/112', imgCount:3, tags:['缺货'], stockOut:true },
+    { id:4, name:'北欧风陶瓷马克杯 350ml', spu:'1002547899', skc:'SKC-882913', cat:'家居生活', brand:'无品牌', price:'¥ 24.80', cost:'成本 ¥ 9.20', stock:1860, status:'pending', statusText:'待审核', shop:'家居生活馆', time:'2026-07-31 08:05', img:'https://picsum.photos/seed/g4/112/112', imgCount:6, tags:['待确认'] },
+    { id:5, name:'儿童益智积木套装 200片', spu:'1002547900', skc:'SKC-882914', cat:'母婴玩具', brand:'PlayFun', price:'¥ 89.00', cost:'成本 ¥ 42.00', stock:520, status:'wait', statusText:'待上架', shop:'母婴精选', time:'2026-07-30 11:30', img:'https://picsum.photos/seed/g5/112/112', imgCount:4, tags:['新品'] },
+    { id:6, name:'真皮商务公文包 14寸电脑', spu:'1002547901', skc:'SKC-882915', cat:'服饰鞋包', brand:'LeatherPro', price:'¥ 358.00', cost:'成本 ¥ 180.00', stock:86, status:'violation', statusText:'违规下架', shop:'皮具旗舰店', time:'2026-07-20 13:55', img:'https://picsum.photos/seed/g6/112/112', imgCount:7, tags:['侵权风险'] }
+  ];
+
+  var statusTagMap = {
+    onsale: 'success', pending: 'warn', wait: 'info', offsale: 'fail', violation: 'danger'
+  };
+
+  function renderTable(data) {
+    var tbody = document.getElementById('goods-tbody');
+    tbody.innerHTML = data.map(function(g) {
+      var stockClass = g.stockOut ? 'stock-out' : (g.stockWarn ? 'stock-low' : '');
+      var stockText = g.stockOut ? '缺货' : g.stock.toLocaleString();
+      var tagHtml = g.tags.map(function(t) {
+        var cls = t === '待确认' || t === '侵权风险' ? 'warn' : (t === '缺货' ? 'danger' : 'info');
+        return '<span class="bc-tag ' + cls + '">' + t + '</span>';
+      }).join('');
+      return '<tr data-id="' + g.id + '">' +
+        '<td><label class="bc-checkbox row-check"><input type="checkbox"/><span class="box"><svg class="icon"><use href="#i-check"/></svg></span></label></td>' +
+        '<td><div class="goods-cell">' +
+          '<div class="goods-thumb" data-open-drawer="' + g.id + '"><img src="' + g.img + '" alt=""/><span class="img-badge">共' + g.imgCount + '张</span></div>' +
+          '<div class="goods-card">' +
+            '<div class="gc-title">' + g.name + '</div>' +
+            '<div class="gc-desc">SPU: ' + g.spu + ' · SKC: ' + g.skc + '</div>' +
+            '<div class="gc-tags">' + tagHtml + '</div>' +
+          '</div></div></td>' +
+        '<td><div>' + g.cat + '</div><div class="text_gray">' + g.brand + '</div></td>' +
+        '<td><div class="price-main">' + g.price + '</div><div class="price-sub">' + g.cost + '</div></td>' +
+        '<td class="' + stockClass + '">' + stockText + '</td>' +
+        '<td><span class="bc-tag ' + statusTagMap[g.status] + '"><span class="dot"></span>' + g.statusText + '</span></td>' +
+        '<td class="text_gray">' + g.shop + '</td>' +
+        '<td class="text_gray">' + g.time + '</td>' +
+        '<td><div class="row gap4 wrap">' +
+          '<button class="bc-btn textPrimary sm" data-open-drawer="' + g.id + '">详情</button>' +
+          '<button class="bc-btn textPrimary sm">编辑</button>' +
+          (g.status === 'onsale' ? '<button class="bc-btn textPrimary sm">下架</button>' : '<button class="bc-btn textPrimary sm">上架</button>') +
+        '</div></td></tr>';
+    }).join('');
+    bindRowEvents();
+  }
+
+  function updateSelectedCount() {
+    var checked = document.querySelectorAll('.row-check.checked').length;
+    document.getElementById('selected-count').textContent = checked;
+    document.querySelectorAll('#goods-tbody tr').forEach(function(tr) {
+      var cb = tr.querySelector('.row-check');
+      tr.classList.toggle('selected', cb && cb.classList.contains('checked'));
+    });
+  }
+
+  function bindRowEvents() {
+    document.querySelectorAll('.row-check').forEach(function(cb) {
+      cb.addEventListener('click', function(e) {
+        e.stopPropagation();
+        cb.classList.toggle('checked');
+        var input = cb.querySelector('input');
+        if (input) input.checked = cb.classList.contains('checked');
+        updateSelectedCount();
+        syncCheckAll();
+      });
+    });
+    document.querySelectorAll('[data-open-drawer]').forEach(function(el) {
+      el.addEventListener('click', function() {
+        openDrawer(parseInt(el.getAttribute('data-open-drawer'), 10));
+      });
+    });
+  }
+
+  function syncCheckAll() {
+    var all = document.querySelectorAll('.row-check');
+    var checked = document.querySelectorAll('.row-check.checked');
+    var checkAll = document.getElementById('check-all');
+    if (checked.length === all.length && all.length > 0) {
+      checkAll.classList.add('checked');
+    } else {
+      checkAll.classList.remove('checked');
+    }
+  }
+
+  function openDrawer(id) {
+    var g = GOODS_DATA.find(function(x) { return x.id === id; });
+    if (!g) return;
+    document.getElementById('drawer-title').textContent = '商品销售信息 - ' + g.name.slice(0, 20) + '…';
+    document.getElementById('drawer-name').textContent = g.name;
+    document.getElementById('drawer-spu').textContent = g.spu;
+    document.getElementById('drawer-skc').textContent = g.skc;
+    document.getElementById('drawer-cat').textContent = g.cat + ' / ' + g.brand;
+    document.getElementById('drawer-status').innerHTML = '<span class="bc-tag ' + statusTagMap[g.status] + '">' + g.statusText + '</span>';
+    document.getElementById('drawer-img').src = g.img;
+    document.getElementById('drawer-img-badge').textContent = '共' + g.imgCount + '张';
+    document.getElementById('drawer-mask').classList.add('show');
+    document.getElementById('drawer-detail').classList.add('show');
+  }
+
+  function closeDrawer() {
+    document.getElementById('drawer-mask').classList.remove('show');
+    document.getElementById('drawer-detail').classList.remove('show');
+  }
+
+  function showToast(type, msg) {
+    var wrap = document.getElementById('toast-wrap');
+    var t = document.createElement('div');
+    t.className = 'bc-toast ' + type;
+    t.innerHTML = '<svg class="icon t-icon"><use href="#i-' + (type === 'success' ? 'success' : 'warn') + '"/></svg><span>' + msg + '</span>';
+    wrap.appendChild(t);
+    setTimeout(function() { t.remove(); }, 3000);
+  }
+
+  /* Select */
+  document.querySelectorAll('[data-select]').forEach(function(sel) {
+    var trigger = sel.querySelector('.bc-select-trigger');
+    if (!trigger) return;
+    trigger.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var isOpen = sel.classList.contains('open');
+      closeAll();
+      if (!isOpen) sel.classList.add('open');
+    });
+    sel.querySelectorAll('.bc-option').forEach(function(opt) {
+      opt.addEventListener('click', function(e) {
+        e.stopPropagation();
+        sel.querySelectorAll('.bc-option').forEach(function(o) { o.classList.remove('selected'); });
+        opt.classList.add('selected');
+        var val = sel.querySelector('.bc-select-trigger .val');
+        if (val) { val.textContent = opt.textContent.trim(); val.classList.remove('placeholder'); }
+        sel.classList.remove('open');
+      });
+    });
+  });
+
+  document.querySelectorAll('[data-dropdown]').forEach(function(dd) {
+    var btn = dd.querySelector('button');
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      closeAll();
+      dd.classList.toggle('open');
+    });
+  });
+
+  function closeAll() {
+    document.querySelectorAll('.bc-select.open,.bc-dropdown.open').forEach(function(el) { el.classList.remove('open'); });
+  }
+  document.addEventListener('click', closeAll);
+
+  /* Switch */
+  document.querySelectorAll('[data-switch]').forEach(function(sw) {
+    sw.addEventListener('click', function() { sw.classList.toggle('on'); });
+  });
+
+  /* Tabs */
+  document.querySelectorAll('[data-biz-tab]').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      tab.parentElement.querySelectorAll('.bc-tab').forEach(function(t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+    });
+  });
+  document.querySelectorAll('[data-capsule-tab]').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      tab.parentElement.querySelectorAll('.bc-tab').forEach(function(t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+    });
+  });
+  document.querySelectorAll('.status-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.status-tab').forEach(function(t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+      var status = tab.getAttribute('data-status');
+      var filtered = status === 'all' ? GOODS_DATA : GOODS_DATA.filter(function(g) { return g.status === status; });
+      renderTable(filtered);
+      document.getElementById('pg-total').textContent = '共 ' + (status === 'all' ? '12856' : filtered.length) + ' 条';
+    });
+  });
+
+  /* Quick cards */
+  document.querySelectorAll('[data-quick-card]').forEach(function(card) {
+    card.addEventListener('click', function() {
+      document.querySelectorAll('[data-quick-card]').forEach(function(c) { c.classList.remove('active'); });
+      card.classList.add('active');
+    });
+  });
+
+  /* Expand/collapse filters §9.15 */
+  var expandToggle = document.getElementById('expand-toggle');
+  var expanded = false;
+  expandToggle.addEventListener('click', function() {
+    expanded = !expanded;
+    document.querySelectorAll('[data-collapsible]').forEach(function(el) {
+      el.classList.toggle('collapsed', !expanded);
+    });
+    expandToggle.classList.toggle('collapsed', expanded);
+    document.getElementById('expand-text').textContent = expanded ? '收起' : '展开';
+  });
+
+  /* Check all */
+  document.getElementById('check-all').addEventListener('click', function() {
+    var checkAll = document.getElementById('check-all');
+    var shouldCheck = !checkAll.classList.contains('checked');
+    checkAll.classList.toggle('checked', shouldCheck);
+    document.querySelectorAll('.row-check').forEach(function(cb) {
+      cb.classList.toggle('checked', shouldCheck);
+      var input = cb.querySelector('input');
+      if (input) input.checked = shouldCheck;
+    });
+    updateSelectedCount();
+  });
+
+  document.getElementById('btn-clear-select').addEventListener('click', function() {
+    document.getElementById('check-all').classList.remove('checked');
+    document.querySelectorAll('.row-check').forEach(function(cb) {
+      cb.classList.remove('checked');
+      var input = cb.querySelector('input');
+      if (input) input.checked = false;
+    });
+    updateSelectedCount();
+  });
+
+  /* Modal / Drawer */
+  document.getElementById('btn-new-goods').addEventListener('click', function() {
+    document.getElementById('modal-new').classList.add('show');
+  });
+  document.querySelectorAll('[data-close-modal]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.getElementById('modal-new').classList.remove('show');
+    });
+  });
+  document.querySelectorAll('[data-close-drawer]').forEach(function(btn) {
+    btn.addEventListener('click', closeDrawer);
+  });
+  document.getElementById('drawer-mask').addEventListener('click', closeDrawer);
+
+  document.querySelectorAll('[data-toast]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      showToast(btn.getAttribute('data-toast'), btn.getAttribute('data-toast-msg'));
+    });
+  });
+
+  document.getElementById('notice-close').addEventListener('click', function() {
+    document.getElementById('notice-bar').style.display = 'none';
+  });
+
+  document.getElementById('btn-search').addEventListener('click', function() {
+    showToast('success', '查询完成，共匹配 6 条商品');
+  });
+
+  document.getElementById('btn-reset').addEventListener('click', function() {
+    document.getElementById('input-goods-name').value = '';
+    renderTable(GOODS_DATA);
+    showToast('success', '筛选条件已重置');
+  });
+
+  document.getElementById('btn-refresh').addEventListener('click', function() {
+    showToast('success', '列表已刷新');
+  });
+
+  document.getElementById('btn-batch-export').addEventListener('click', function() {
+    var n = document.querySelectorAll('.row-check.checked').length;
+    if (!n) { showToast('warn', '请先选择要导出的商品'); return; }
+    showToast('success', '已导出 ' + n + ' 条商品数据');
+  });
+
+  renderTable(GOODS_DATA);
+})();
+</script>
+</body>
+</html>
