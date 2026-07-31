@@ -16,6 +16,8 @@
 > 📌 本文档已抛弃 Beast Core 默认主题（`#19e` 深蓝 / 圆角 3px），全文统一采用 **OMS 运行时主题**（`#0071f3` 亮蓝 / 圆角 6px）。
 >
 > 📌 **阅读约定（精简重构核心原则）**：色彩、尺寸、图标体系等基础值在第二~四章**定义一次**作为权威源，后续组件章仅描述组件特有规格并引用基础值，不再重复抄录色值。状态色三件套以 **§2.9 为唯一权威源**，Toast/NoticeBar/状态提示块统一引用。
+>
+> 📝 **勘误记录（2026-07-31）**：本轮以三份真实线上页面运行时快照（停滞品生命周期、全托管开款价格管理、同款黑白名单管理）与两份依据本规范由 AI 生成的高保真页面（`index.html`、`oms-task-management-list.html`）做交叉核验，修正了若干与真实运行时 CSS 不符的数值/描述，并补充了此前遗漏的组件（详见各章节内标注"已更正""此前版本误写"字样处，以及新增的 §9.13~§9.15）。主要更正点：§12.1 主画布背景色由 `#f0f2f5` 更正为 `#fff`；Table 行 hover 色由 `#e6f6ff` 更正为 `#e6f9ff`；Tag success 三件套由 `#00bb12` 系更正回 `#00b359` 系（Beast Core 原生 Tag 未与 §2.9 统一）；Modal 按钮间距由 `8px` 更正为 `13px`；Card 选中三角标尺寸方向更正；Tab 分隔线颜色、高亮线默认高度、状态 Tab 字重字号等均已更正；新增快筛预设条、快捷统计卡片、表格图文辅助元素等章节。
 
 ---
 
@@ -323,8 +325,9 @@ OMS 为 Toast / NoticeBar / 确认渲染等信息提示场景配套了完整的*
 - 类型：`info`(蓝) / `warn`(橙) / `danger`(红) / `success`(绿) / `fail`(红)。
 - padding `4px`，圆角 `6px`，字号随尺寸 12/12/16px。
 - **交互细节**：
-  - 各类型为「文字色 + 浅底 + 同色边框」三件套：info 蓝`#0071f3`/`#e6f6ff`/`#52aeff`，warn 橙`#ff7300`/`#fff5e6`/`#ffc37a`，danger 红`#f71010`/`#fff2f0`/`#ffaca6`，success 绿 **`#00bb12`/`#e3fae1`/`#9bed98`（已与 §2.9 全局 success 三件套统一，不再使用旧值 `#00b359`/`#e8fbe5`/`#00b359`）**，fail 灰`rgba(0,0,0,.4)`/`#ebebeb`/`rgba(0,0,0,.12)`。
-  - **注**：目前仅 success 已与 §2.9 全局方案统一；info / warn / danger 因历史原因仍使用 Tag 专属配色（与 §2.9 数值不同属正常，非笔误），产图时以本条为准。
+  - 各类型为「文字色 + 浅底 + 同色边框」三件套：info 蓝`#0071f3`/`#e6f6ff`/`#52aeff`，warn 橙`#ff7300`/`#fff5e6`/`#ffc37a`，danger 红`#f71010`/`#fff2f0`/`#ffaca6`，success 绿 **`#00b359`/`#e8fbe5`/`#00b359`**（对应 `--bc-Tag-success-color/-backgroundColor/-borderColor`，经 OMS 三个实际业务页面运行时 CSS 校验，OMS 主题**并未**覆盖该组件级 Token，Beast Core `Tag` 组件的 success 三件套目前仍是此"旧值"，不要再套用 §2.9 的 `#00bb12`/`#e3fae1`/`#9bed98`），fail 灰`rgba(0,0,0,.4)`/`#ebebeb`/`rgba(0,0,0,.12)`。
+  - **注 1**：info / warn / danger / fail 因历史原因均使用 Tag 专属配色（与 §2.9 数值不同属正常，非笔误），产图时以本条为准。
+  - **注 2**：`#00bb12`/`#e3fae1`/`#9bed98` 这套配色实际生效于 `bgb-pc` 业务组件库的标签（CSS 变量 `--pc-tag-success-color` 等，见 §7.6），与 Beast Core 原生 `Tag` 组件是两个独立组件，不可混用；此前版本"已与 §2.9 统一"的表述已核实为误判，特此更正。
   - 支持 `dot` 圆点形态：标签内含 `6×6` 同色圆点。
   - 支持可关闭（`closable`）：右侧显示关闭 `×` 图标，hover 高亮。
   - `gray` 灰标签：文字 `rgba(0,0,0,.6)` + 底色 `rgba(0,0,0,.04)`，无边框，用于中性分类。
@@ -342,7 +345,7 @@ OMS 为 Toast / NoticeBar / 确认渲染等信息提示场景配套了完整的*
 - 选中态边框变 `themeColor`，右上角带勾选三角标（`beastCardCheckedTriangle` 容器 + `beast-core-icon-check` SVG 图标）。
 - footer 最小高 40px，padding 12px。
 - **交互细节**：
-  - 选中态：边框变 `#0071f3`，右上角显示蓝色勾选三角标。结构为**真实 DOM 元素**而非伪元素：一个蓝色三角形容器（`border-top: 24px solid themeColor; border-left: 24px solid transparent`，绝对定位 `top:0; right:0`）内叠一个白色勾选 SVG 图标（`beast-core-icon-check`，`fill=#fff`，约 `14×14px`，绝对定位 `top:1px; right:1px`），勾符号被蓝色三角完整包裹。
+  - 选中态：边框变 `#0071f3`，右上角显示蓝色勾选三角标。结构为**真实 DOM 元素**而非伪元素：一个直角三角形容器，通过 `border-width: 14px 15px`（`small` 尺寸为 `10px 10px`）+ `border-color: themeColor themeColor transparent transparent`（即**上边、右边**为主题色，**下边、左边**透明，绝对定位 `top:0; right:0`）实现；内叠一个白色勾选 SVG 图标（`beast-core-icon-check`，`fill=#fff`，`font-size:14px`，绝对定位 `top:-12px; right:-14px`，small 尺寸 `font-size:16px` 并 `scale(0.625)`），勾符号被蓝色三角完整包裹。（对应 Token：`--bc-Card-beastCardCheckedTriangleBorderWidth: 14px 15px`、`--bc-Card-beastCardCheckedTriangleSmallBorderWidth: 10px 10px`，经真实运行时 CSS 校验，此前版本描述的 `24px` 尺寸与"border-top/border-left"着色方向均有误，已更正。）
   - 勾选图标使用 `beast-core-icon-check` 线型对勾（`viewBox 0 0 1024 1024`），白色填充。图标资源索引见**附录 F**，完整 SVG `path` 源码见独立文件《Beast-Core-设计规范-SVG图标附录.md》§F（需要直接输出 HTML/SVG 时注入）。
   - hover 态：无特殊背景变化（卡片非可点击元素，选中靠显式操作）。
   - cover 封面图无内边距，撑满卡片宽度。
@@ -350,13 +353,13 @@ OMS 为 Toast / NoticeBar / 确认渲染等信息提示场景配套了完整的*
 ### 5.10 Table 表格
 - 用于行列数据展示，支持选择/排序/筛选/对比/自定义表头。
 - 支持顶对齐 / 居中 / 底对齐。
-- 固定表头/列 z-index 100。
+- 固定表头/列设计 Token 值为 z-index 100（`--bc-zIndex-tableFixed`），但当前 OMS 运行时实际生效值更低（见下方交互细节说明）。
 - **表头规格（OMS）**：背景 `#f5f5f5`，文字色 `rgba(0,0,0,.8)`，字重 `500`，行高 `18px`。
 - **交互细节**：
-  - 行 hover 背景 `themeColor1 (#e6f6ff)` 浅蓝底；选中行同样浅蓝底。
+  - **行 hover 背景为 `#e6f9ff`**（`--bc-Table-trHoverBgColor`，专属组件 Token，**不等于** `themeColor1 (#e6f6ff)`，经三个真实 OMS 页面运行时 CSS 交叉核验一致，二者仅差 1 个色值单位，极易混淆，产图/还原时务必使用 `#e6f9ff`）；选中行同样使用该浅蓝底。
   - 单元格 padding `9px 12px`，斑马纹可选（偶数行 `#fafafa`）。
   - 可排序列表头显示排序图标，点击切换 升序↔降序↔取消。
-  - 支持选择列（Checkbox 全选/单选）、筛选（表头下拉）、固定列/表头（z-index `100`）。
+  - 支持选择列（Checkbox 全选/单选）、筛选（表头下拉）、固定列/表头。**注**：Design Token `--bc-zIndex-tableFixed` 定义为 `100`，但真实运行时 CSS 里固定表头（sticky header）实际 `z-index: 3`、左右冻结列（sticky column）实际 `z-index: 2`，并未直接引用该 Token；产图时按真实值（表头 3 / 冻结列 2）还原层级关系，`100` 仅作为设计系统预留的 Token 值记录于附录 A/§6。
   - 空数据占位：居中图标 + 标题（`16px #000`）+ 描述（`12px #999`）。
 
 ### 5.11 Modal 弹窗
@@ -368,7 +371,7 @@ OMS 为 Toast / NoticeBar / 确认渲染等信息提示场景配套了完整的*
   - 遮罩 `rgba(0,0,0,.4)`，点击遮罩默认不关闭（可配置 `maskClosable`）。
   - header 右侧关闭图标 `16px`（`icon-color: rgba(0,0,0,.4)`），hover 变 `rgba(0,0,0,.8)`，位于 `right:12px; top:12px`。
   - 出现/消失带淡入淡出动效（`easeInOutCirc`）。
-  - footer 操作按钮右对齐，按钮间距 `8px`。
+  - footer 操作按钮右对齐，按钮间距 `13px`（`--bc-Modal-operationGutter` / `--bc-Button-buttonGap`，经真实运行时 CSS 校验，并非通用 Space 组件的默认 `8px`，Modal 内按钮组间距为 Button 组件专属 Token，此前版本误写为 `8px`，已更正）。
   - `Modal.Alert()` / `Modal.Confirm()` 为语法糖，复用 Modal 容器，按钮为「取消 / 确定」。
   - ESC 键关闭（可配置）。
 
@@ -405,7 +408,7 @@ OMS 为 Toast / NoticeBar / 确认渲染等信息提示场景配套了完整的*
   - 可包裹任意内容，加载期间内容不可交互。
 
 ### 5.16 Tab 选项卡
-- **line 线性**（一级 Tab，MMS 主形态）：字号 16px，底部 2px 主题色高亮线，padding `0 12px`，label padding `12px 0`。用于页面/模块头部统领内容。
+- **line 线性**（一级 Tab，MMS 主形态）：字号 16px，底部主题色高亮线，padding `0 12px`，label padding `12px 0`。用于页面/模块头部统领内容。**高亮线高度组件默认值为 `1px`**（`--bc-Tab-lineType-activeBelowLabelLineHeight`），部分页面（如状态统计 Tab）会通过内联样式将其显式覆盖为 `2px` 以强化视觉突出（如 §9.4 状态标签页场景），两者均属正常用法，产图时按需选择，不要将 `2px` 误当作组件恒定默认值。
 - **card 卡片型**：padding `8px 20px`，字号 12px。
 - **capsule 胶囊型**：padding `7px 16px`，直角，字号 12px。
 - **reunit 等分型**：padding 16px，字号 12px。
@@ -481,7 +484,7 @@ OMS 为 Toast / NoticeBar / 确认渲染等信息提示场景配套了完整的*
 | 组件 | z-index |
 |------|---------|
 | BackTop 回到顶部 | 10 |
-| Table 固定列/表头 | 100 |
+| Table 固定列/表头（设计 Token，实际生效见下方注） | 100 |
 | Select 下拉面板 | 101 |
 | Spin 加载遮罩 | 999 |
 | Preview 预览 | 999 |
@@ -493,6 +496,8 @@ OMS 为 Toast / NoticeBar / 确认渲染等信息提示场景配套了完整的*
 | Portal 阴影 | 1029 |
 | Dropdown 下拉菜单 | 1050 |
 | Tooltip 提示 | 1060 |
+
+> **注（Table 固定列/表头）**：Beast Core 设计系统预留了 `--bc-zIndex-tableFixed: 100` 这一 Token，但经三个真实 OMS 页面运行时 CSS 交叉核验，当前 `Table` 组件实现并未直接引用该 Token，而是分别硬编码为：固定表头（sticky header）`z-index: 3`，左右冻结列（sticky column）`z-index: 2`。产图/还原表格层级关系时请按 3 / 2 的真实值处理，`100` 仅作为设计系统历史/预留 Token 记录，不代表当前实际渲染层级。
 
 ---
 
@@ -582,13 +587,15 @@ OMS 大量使用"浅底 + 边框 + 图标"的信息提示块，配色引用 §2.
 - 提示条内强调文字色 `#ff7300`（橙色）
 - 下方说明文字色 `rgba(0,0,0,.6)`
 
+> **数据来源说明**：本条数值来自 `2.css`/`3.css` 批量操作类模块（`batch-restock-content` 等），三份用于本轮校对的真实页面快照（停滞品生命周期、全托管开款价格管理、同款黑白名单管理）均未包含批量操作场景，故无法在本轮交叉核验中复核；后续如拿到含批量操作头部的真实页面快照，应优先复核本条数值。
+
 ### 9.4 状态标签页（Status Tab）
 
-带数字统计的标签页切换：
+带数字统计的标签页切换，基于 Beast Core `Tab`（line 型）组件叠加业务样式类 `status-tab_*` 实现：
 
-- label 字重 `500`，数字字号 12px、字重 normal
-- 水平排列时数字与标签间距 `4px`
-- 选中项使用主题色高亮
+- label 本身**无独立字重覆盖**，字重继承 Tab line 组件默认值 `400`（经真实运行时 CSS 核验，`status-tab_item`/`status-tab_horizon` 相关 class 均未设置 `font-weight`，此前版本"字重 500"的表述缺乏依据，已更正；选中态因 `TAB_lineLabelActive` 变色但不加粗）。
+- 数字**无独立字号覆盖**，字号继承外层 line 型 Tab 的字号 Token `--bc-Tab-lineType-fontSize`（默认解析为 `16px`），字重 `400`；与标签间距通过 `margin-left: 4px`（`status-tab_horizonNum`）控制（此前版本"数字字号12px"的表述已更正为"继承外层 Tab 字号，默认 16px"）。
+- 选中项使用主题色高亮，高亮线默认 `1px`，部分页面覆盖为 `2px`（见 §5.16 说明）。
 
 ### 9.5 全宽抽屉（Full-width Drawer）
 
@@ -604,6 +611,8 @@ OMS 商品销售信息抽屉采用**全屏宽**布局：
 | 左图区 | 宽 `228px` |
 | 右侧锚点菜单 | 宽 `170px`，绝对定位 |
 | 灰底块 | 背景 `rgba(0,0,0,.04)`，圆角 `6px` |
+
+> **数据来源说明**：本条数值来自商品销售信息抽屉页面的运行时 CSS（`--bc-Drawer-*` 系列 Token），三份用于本轮校对的真实页面快照均未触发该抽屉、也不含 `--bc-Drawer-*` 变量定义，故无法在本轮交叉核验中复核；后续如拿到含全宽抽屉的真实页面快照，应优先复核本条数值。
 
 ### 9.6 商品卡片（Goods Card）
 
@@ -647,14 +656,20 @@ OMS 商品销售信息抽屉采用**全屏宽**布局：
 
 **筛选操作区（Divider Block）：**
 - 白底，上下 margin `10px`，flex 换行布局
-- 左侧操作块：子项间距 `15px`
+- 左侧操作块：子项间距 `8px`（经真实运行时 CSS 核验，通过 `Space` 组件或内联 `margin-right:8px` 实现，全站未检索到以 `15px` 为间距用途的规则，此前版本"15px"表述已更正）
 - 按钮组：flex 换行，按钮间 `margin-right: 8px; margin-bottom: 8px`
 - 右侧筛选区：`flex: 1 1 auto`，右对齐
 
-**底部固定操作栏（Footer Block）：**
+**底部固定操作栏（Footer Block，新架构 temu-oms-newon）：**
 - `position: sticky; bottom: 0; z-index: 101`，白底
 - padding `12px 0 0 12px`
 - 左右各 `margin: -16px`（撑满父容器内边距）
+- **投影**：真实运行时观察到底部固定栏带向上投射的轻阴影 `box-shadow: rgba(0,0,0,.12) 0px -4px 24px 6px`，用于在内容滚动时区分固定层与表格内容，产图时不要遗漏（详见 §12.1 引言的阴影原则更正说明）。
+
+**底部固定操作栏（旧架构 oms-layout 等价组件，class 前缀 `sticky-table-bottom`）：**
+- 结构与新架构 Footer Block 等价，但实现方式不同：`position: sticky; bottom: 0; z-index: 101`，背景色由 CSS 变量 `--twf-bottom-background-color`（默认 `#fff`）控制
+- padding 默认 `24px 0`（CSS 变量 `--twf-sticky-bottom-padding`），可被业务页面覆盖为更紧凑的值（如 `12px 0`）
+- 内含独立的阴影装饰层（`shadow` / `shadow-container`），阴影值 `box-shadow: 0px -4px 12px 0px rgba(0,0,0,.12)`（同样可通过 `--twf-sticky-bottom-box-shadow` 覆盖），效果与新架构一致：向上投射的轻阴影分隔滚动内容与固定操作栏
 
 ### 9.11 加载蒙层（Loading Spin）
 
@@ -674,6 +689,35 @@ OMS 业务 CSS 共覆盖以下模块（按业务域归类）：
 | 审核流程 | approve-info、audit-detail-drawer、newon-cofirm-render、modal-check-before-submit |
 | 多语言/规格 | decoration-info、specs-main-normal-translate、lan-attr-popover、category-render |
 | 通用容器 | drawer-content、divider-block、footer-block、quick-fields、status-tab、loading、model-card |
+
+### 9.13 快筛预设条（Quick Fields）
+
+筛选表单上方的"已保存筛选条件预设"入口条，与筛选表单本身是两个不同组件（不要与 §12.1「快速筛选/状态胶囊组」里的 Tab capsule 混淆）：
+
+- 容器：背景 `#f7f7f7`，padding `8px 24px 8px 8px`，圆角 `6px 6px 0 0`，flex 布局、两端对齐（`justify-content: space-between`）
+- 左侧："快速筛选" label（字号 12px，颜色 `rgba(0,0,0,.8)`，宽度 `104px` 右对齐，与筛选表单 label 宽度对齐保持视觉统一）+ 一组 `gray`/`small` 按钮（用户保存的筛选预设名称，如"华东仓""生产环境"等，按钮间距 `8px`）
+- 右侧：两个 `textPrimary`/`small` 文字链接，固定文案"保存为快筛"「快筛管理」
+
+### 9.14 快捷统计卡片（Quick Field Card）
+
+位于页面最上方（业务 Tab 之下、筛选表单之上）的可点击统计卡片区，用于展示分类计数并联动触发筛选条件（如"卖家确认超时"场景下的"即将超期/已超期/超期作废"）：
+
+- 容器：最小高 `72px`，背景 `#f7f7f7`，padding `16px 8px`，圆角 `6px 6px 0 0`，底部分隔线 `1px solid rgba(0,0,0,.08)`，flex 换行布局；容器内首个子元素通常是一段说明性文字标签（12px，`rgba(0,0,0,.8)`）
+- 卡片：固定尺寸 `192×40px`（`min-width`/`max-width` 均锁定 `192px` 不换行），圆角 `6px`，边框 `1px solid rgba(0,0,0,.14)`，白底，文字 12px `rgba(0,0,0,.8)` 居中，`cursor: pointer`，卡片间距 `margin-left: 8px`
+- 点击后通常联动筛选表单，自动带入对应筛选条件并刷新表格
+
+### 9.15 表格图文辅助元素（Table Media Badges）
+
+表格单元格内嵌图片/筛选表单场景中反复出现的两个小型辅助元素，规格独立于所属的父组件（Table / 筛选表单）：
+
+**图片总数角标**（用于表格缩略图，标注该行关联的图片张数）：
+- 图片容器 `position: relative`，`cursor: pointer`
+- 角标绝对定位于图片底部、宽度撑满图片，背景 `rgba(0,0,0,.34)`，文字白色 12px 居中，如"共3张"
+
+**筛选区"展开/收起"计数徽标**（配合 §12.1②筛选条件区的展开按钮使用）：
+- 徽标：`20×20px` 圆形，蓝底（`themeColor`）白字，字号 12px，居中显示折叠隐藏的筛选项数量
+- 文案："展开"/"收起" 12px 文字 + 线型下箭头图标（`beast-core-icon-down`，收起时旋转 180°，见 §2.8）
+- 徽标与文案、图标之间无额外容器，整体 `margin-left: 12px` 与筛选表单主体分隔
 
 ---
 
@@ -762,7 +806,7 @@ OMS 业务需要铺满，因此清除了外层 metro-layout 框架的默认内�
 【表格 —— 详见 §5.10】
 - 表头背景 #f5f5f5，文字 rgba(0,0,0,.8)，字重 500，行高 18px
 - 信息密度高，支持选择/排序/筛选
-- 行 hover 浅蓝底 #e6f6ff，选中行同色
+- 行 hover 浅蓝底 #e6f9ff（Table 专属 Token，非 themeColor1 的 #e6f6ff），选中行同色
 
 【组件交互 —— 必须遵守，详见 §5 各组件】
 - 分页：翻页用线型 V 形左右箭头（beast-core-icon-left/right，非实心三角），跳页用 « » 符号，禁止用「上一页/下一页」文字；选中页码蓝底白字
@@ -786,25 +830,33 @@ OMS 业务需要铺满，因此清除了外层 metro-layout 框架的默认内�
 
 ### 12.1 管理列表页布局标准 (Query & Table Page Layout)
 
-OMS 标准管理列表页采用 **“浅灰画布 (#f0f2f5) + 模块化无界平铺”** 的纵向多层结构。各区块不依赖重度阴影，主要依靠容器背景底色与轻量级分割线进行逻辑留白与层级区分。
+OMS 标准管理列表页采用 **"白底画布 + 模块化无界平铺"** 的纵向多层结构。绝大部分区块不依赖阴影，主要依靠容器背景底色与轻量级分割线进行逻辑留白与层级区分；仅**底部固定操作栏/分页栏（sticky footer）**在与可滚动表格内容分离时使用轻投影强化层次（见下文 §5「数据表格与分页区」及 §9.10）。
+
+> **勘误说明（重要）**：此前版本认为 OMS 业务内容区背景为浅灰画布 `#f0f2f5`，经与三个真实线上页面（停滞品生命周期、全托管开款价格管理、同款黑白名单管理）运行时 CSS 交叉核验，`#f0f2f5` 实际只出现在应用最外层 shell 容器 `.rocket-layout` 及其 `.rocket-layout-footer` 上（且业务内容铺满时几乎不可见），三个页面各自的业务根容器（如 `goods-lifecycle-manage-new_container`、`page-container_pageContainer`、`black-white-list_container`）以及中间层容器 `.oms-content-main` 实测背景色均为**纯白 `#fff`**，与 §10.1「`.temu-oms-newon` 背景白色」的记录完全一致。以下已按 `#fff` 更正。
 
 ---
 
 #### 1. 结构骨架与背景层级 (Skeleton & Background Elevation)
 
 * **全局底色 (Body Background)**：`#ffffff` (`rgb(255, 255, 255)`)
-* **主画布/内容区背景色 (Content Canvas Background)**：**`#f0f2f5`** (`rgb(240, 242, 245)`)
+* **主画布/内容区背景色 (Content Canvas Background)**：**`#ffffff`**（业务内容区与全局底色一致；`#f0f2f5` 仅为应用最外层 shell 背景，不作为业务页面产图色值）
 * **区块容器形态**：筛选区与表格区采用无圆角（`border-radius: 0px`）、无额外边框（`border: none`）的沉浸式无界流式排布，整体紧凑高效。
 
 ---
 
 #### 2. 纵向卡槽架构与详细规格 (Layout Architecture)
+
+> **架构差异提醒**：OMS 后台实际存在**新架构**（根容器 `.temu-oms-newon`，组件全部基于 Beast Core）与**旧架构**（根容器 `.oms-layout.oms-dark`/`.rocket-layout`，部分顶层组件沿用 Ant Design 风格的 Rocket UI）两条技术路线，二者在"顶部 Tab"层的实现上有明显差异（见下方①）。下表给出的是**最大兼容模型**，具体页面不一定同时出现全部卡槽，也可能出现多层 Tab/Radio 叠加（见①末尾说明），产图前应先判断目标页面属于哪种架构、有哪些实际卡槽。
+
 +-----------------------------------------------------------------------+
-| 0. 顶部一级业务 Tabs (Top Business Tabs)                              |
-|    - [全托管] [半托管] [本地] [高分品牌]  (高度: 40px, 带有下划线指示条)      |
+| 0. 顶部一级业务 Tabs (Top Business Tabs · 选填，视架构而定)             |
+|    - [全托管] [半托管] [本本] [高分品牌]  (高度: 40px, 带有下划线指示条)   |
 +-----------------------------------------------------------------------+
 | 1. 快速筛选/状态胶囊组 (Status Capsule Filter Bar - 选填)               |
-|    - [默认筛选] [精细查询]  /  [待处理(2050)] [待审核(329)]               |
+|    - [默认筛选] [精准查询]  /  [待处理(2050)] [待审核(329)]               |
++-----------------------------------------------------------------------+
+| 1.5 快筛预设条 (Quick Fields · 选填，详见 §9.13)                       |
+|    - "快速筛选" + [已保存预设按钮组]  ... [保存为快筛] [快筛管理]         |
 +-----------------------------------------------------------------------+
 | 2. 筛选条件区 (Search Block)                                          |
 |    - Label 规范: 宽度响应式，1920px 视口下为 104px (右对齐) | 间距: 16px  |
@@ -830,14 +882,20 @@ OMS 标准管理列表页采用 **“浅灰画布 (#f0f2f5) + 模块化无界平
 
 ##### ① 顶部业务 Tabs (Top Business Tabs)
 * **定位与作用**：用于大类目或业务模式切换（如全托管/半托管）。
-* **渲染规范**：顶部固定 `40px` 高度，字重 `500`，当前选中 Tab 底部配有 `2px` 主色下划线（Primary Indicator），下方通过 `1px solid #e8e8e8` 浅灰色线与主内容区分隔。
+* **实现组件因架构而异，经真实页面核验存在三种真实形态，不要假设只有一种**：
+  1. **旧架构 + Rocket UI（rocket-tabs）**：如全托管开款价格管理页，标签为完整业务名（"全托管开款价格管理"/"半托管开款价格管理"等），非 Beast Core 组件，视觉上是 Ant Design 风格的线性 Tab + 下划线动画。
+  2. **旧架构 + Beast Core Tab（`TAB_` line 组件）**：如同款黑白名单管理页，标签为简短模式名（"全托管/半托管/本本/高分品牌"，注意真实文案是"本本"而非"本地"），下方紧跟一层 Beast Core Tab capsule 组件做"默认筛选/精准查询"二态切换（注意真实文案是"精准查询"而非"精细查询"）。
+  3. **新架构（temu-oms-newon）**：往往**没有独立的业务模式 Tab 层**，顶部唯一的 Tab 行本身就是带数字统计的「状态 Tab」（如停滞品生命周期页"全部(17003)/选品中(4032)/…"，详见 §9.4），即卡槽 0 与卡槽 1 合二为一。
+* **渲染规范**：顶部固定 `40px` 高度，选中 Tab 底部配有主色下划线，下方通过 `1px solid #ebebeb`（`divideColor`，见 §2.4，此前版本误写为 `#e8e8e8`）浅灰色线与主内容区分隔。下划线高度默认 `1px`，部分页面（尤其状态 Tab）会显式覆盖为 `2px` 强化视觉突出，详见 §5.16 说明，不要假设 `2px` 是恒定默认值；字重继承 Tab 组件默认 `400`，无独立加粗（详见 §9.4）。
+* **多层叠加**：真实页面可能在业务模式 Tab 之下，进一步叠加"二级维度 Tab（TAB_line）+ Switch 开关"、"状态统计 Tab（TAB_card）+ 视角切换 RadioGroup（button-tab 形态）"等 2~4 层纵向堆叠的 Tab/Radio 组合（如全托管开款价格管理页同时出现"我的核价单/全部核价单/…"二级 Tab、"新版本实时同款" Switch、"待核价(5407)/待卖家确认(11)/…" 状态卡片 Tab、"核价单视角/其他视角" 按钮式 RadioGroup 四层），产图时不要局限于"0+1"两卡槽模型。
 
 ##### ② 筛选条件区 (Search Block)
 * **Label 文本与对齐**：
   * **宽度 (Width)**：**响应式**，随视口宽度自适应（与 §4.3 的固定表单 `144px` 不同场景、不同规则，二者不冲突）；**`1920px` 视口下参考值为 `104px`**，其他分辨率请按实际视口比例换算，不要固定套用某一个像素值。
   * **文本对齐 (Text Align)**：**`right`**（右对齐）。
   * **与控件间距 (Margin-Right)**：固定 **`16px`**。
-* **输入控件 (Form Items)**：统一采用 **`28px`** 高度（Medium 规格），根据屏幕宽度自适应排布（单行 3~4 个项），超出部分通过右下角“展开/收起”控制。
+* **输入控件 (Form Items)**：统一采用 **`28px`** 高度（Medium 规格），每行项数由字段自身宽度需求决定（Beast Core Grid `span15`/`span30`/`span45` 分别对应 `25%`/`50%`/`75%` 列宽），常见为每行 2~4 个不等，并非固定"3~4个"，超出部分通过右下角"展开/收起"控制。
+* **展开/收起按钮**：由 `20×20px` 圆形蓝底白字计数徽标（显示折叠隐藏的筛选项数量）+ `12px` "展开"/"收起" 文字 + 线型下箭头图标（收起态旋转180°）组成，整体 `margin-left: 12px`，详见 §9.15。
 * **操作按钮聚类 (Action Cluster)**：包含主按钮 `[查询]`（Primary 蓝底）、次按钮 `[重置]`（白底灰框），右侧可紧跟 `[保存快照]`、`[快捷管理]` 等 Link 样式文字。
 
 ##### ③ 业务提示条 (Alert Notice Bar)
@@ -847,8 +905,8 @@ OMS 标准管理列表页采用 **“浅灰画布 (#f0f2f5) + 模块化无界平
 ##### ④ 批量操作与工具栏 (Action Bar)
 * **排列格式**：位于筛选区下方、数据表格上方。与上/下区块保持 **`10px` ~ `16px`** 的外间距（Margin）。
 * **对齐逻辑**：
-  * **左侧**：强业务操作按钮组（如“新增”、“批量导出”、“锁定”），按钮间距 `10px`。
-  * **右侧**：辅助功能/数据记录入口（如“查询申诉记录”、“一键复制”），通常采用 Link 样式或次级按钮。
+  * **左侧**：强业务操作按钮组（如"新增"、"批量导出"、"锁定"），按钮间距 `10px`。
+  * **右侧**：辅助功能/数据记录入口（如"查询申诉记录"、"一键复制"），通常采用 Link 样式或次级按钮。**实现细节**：部分入口（如"一键复制所选ID"）在真实页面中并非标准 `Button`/`Link`，而是用禁用态 `Select` 组件（`ST_headDisabled` + 只读 `input`，`value` 直接写入文案）伪装的静态展示框，产图/还原时如套用标准 Button 视觉会有细微边框/圆角差异，建议按需向研发确认具体控件类型。
 
 ##### ⑤ 数据表格与分页区 (Table & Pagination)
 * **表头 (Table Header)**：
@@ -857,13 +915,13 @@ OMS 标准管理列表页采用 **“浅灰画布 (#f0f2f5) + 模块化无界平
   * **单元格内边距 (Cell Padding)**：**`9px 12px`**（上下 9px，左右 12px）。
   * **字体样式**：`12px`，字重 `500`，字色 `#333333`。
 * **表格行 (Table Body Row)**：
-  * **背景色**：默认 `#ffffff`，Hover 高亮态 `#e6f6ff`（浅蓝底）。
-  * **高度**：自适应扩展，以兼容多行图文、 Goods/SKU ID 标签、状态 Badge 等复杂单元格。
+  * **背景色**：默认 `#ffffff`，**Hover 高亮态 `#e6f9ff`**（浅蓝底，专属 Token `--bc-Table-trHoverBgColor`，**不等于** themeColor1 `#e6f6ff`，此前版本误写，详见 §5.10 说明）。
+  * **高度**：自适应扩展，以兼容多行图文、 Goods/SKU ID 标签、状态 Badge 等复杂单元格；表格内嵌缩略图可能带"共N张"图片总数角标，详见 §9.15。
 * **分页器 (Pagination)**：
   * **高度**：**`28px`**（Medium 规格）。
   * **对齐方式**：`justify-content: flex-end`（靠右对齐）。
   * **外边距 (Margin-Top)**：默认与表格紧贴（Margin-Top 为 `0px`），保持整体感。
-  
+* **底部固定栏投影**：当分页/操作栏以 `position: sticky` 固定在可视区域底部时，真实页面均带有向上投射的轻阴影 `box-shadow: 0px -4px 12~24px 0~6px rgba(0,0,0,.12)`（新架构 Footer Block 实测 `0px -4px 24px 6px`，旧架构 `sticky-table-bottom` 实测 `0px -4px 12px 0px`），用于区分滚动表格内容与固定层，详见 §9.10。
 
 ---
 
